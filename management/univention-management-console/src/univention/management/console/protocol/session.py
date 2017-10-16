@@ -974,14 +974,7 @@ class SessionHandler(ProcessorBase):
 		if not self.authenticated and request.command != 'AUTH':
 			self.request(request)
 		elif request.command == 'AUTH':
-			from univention.management.console.protocol.server import Server
-			Server.reload()
-			try:
-				self.__auth.authenticate(request)
-			except (TypeError, KeyError):
-				response = Response(request)
-				response.status = 400
-				self._response(response)
+			self._handle_auth(request)
 		elif request.command == 'GET' and 'newsession' in request.arguments:
 			CORE.info('Renewing session')
 			if self.processor:
@@ -991,6 +984,21 @@ class SessionHandler(ProcessorBase):
 		else:
 			self.initalize_processor(request)
 			self.processor.request(request)
+
+	def _handle_auth(self, request):
+		request.options = request.body
+		sanitize(
+			username=StringSanitizer(required=True),
+			password=StringSanitizer(required=True),
+		)(lambda self, r: None)(self, request)
+		from univention.management.console.protocol.server import Server
+		Server.reload()
+		try:
+			self.__auth.authenticate(request)
+		except (TypeError, KeyError):
+			response = Response(request)
+			response.status = 400
+			self._response(response)
 
 	def initalize_processor(self, request):
 		if not self.processor:
