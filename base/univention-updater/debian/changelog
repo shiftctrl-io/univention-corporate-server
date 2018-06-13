@@ -1,3 +1,15 @@
+univention-updater (13.0.1-69) unstable; urgency=low
+
+  * Bug #46600: Fix local repository dists Packages setup
+  * Bug #47834: Fix univention-upgrade --help
+  * Bug #48019: Drop package index update before package removal
+  * Bug #31074: Drop old UCR variables
+  * Bug #29505: Mark repository tools as deprecated
+  * Bug #45119: Wait for DNS server for maintenance
+  * Bug #48123: Update PXE installer with repository-update net
+
+ -- Philipp Hahn <hahn@univention.de>  Thu, 14 Jun 2018 15:09:18 +0200
+
 univention-updater (13.0.1-68) unstable; urgency=medium
 
   * Bug #47913: fixed updater
