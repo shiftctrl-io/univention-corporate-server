@@ -48,6 +48,7 @@ __dn_property_encoder_class_cache = {}
 
 class BaseEncoder(object):
 	static = False  # whether to create an instance or use a class/static method
+	type = None  # type of decoded value
 
 	def __init__(self, property_name=None, *args, **kwargs):
 		self.property_name = property_name
@@ -64,12 +65,13 @@ class BaseEncoder(object):
 
 class Base64BinaryPropertyEncoder(BaseEncoder):
 	static = False
+	type = str
 
 	def decode(self, value=None):
 		if value:
 			return Base64BinaryProperty(self.property_name, value)
 		else:
-			return value
+			return None
 
 	def encode(self, value=None):
 		if value:
@@ -77,7 +79,7 @@ class Base64BinaryPropertyEncoder(BaseEncoder):
 				value = Base64BinaryProperty(self.property_name, raw_value=value)
 			return value.encoded
 		else:
-			return value
+			return None
 
 
 class Base64Bzip2BinaryPropertyEncoder(BaseEncoder):
@@ -98,24 +100,26 @@ class Base64Bzip2BinaryPropertyEncoder(BaseEncoder):
 
 class DatePropertyEncoder(BaseEncoder):
 	static = True
+	type = datetime.date
 
 	@staticmethod
 	def decode(value=None):
 		if value:
 			return datetime.date(*time.strptime(value, '%Y-%m-%d')[0:3])
 		else:
-			return value
+			return None
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return value.strftime('%Y-%m-%d')
 		else:
-			return value
+			return None
 
 
 class DisabledPropertyEncoder(BaseEncoder):
 	static = True
+	type = bool
 
 	@staticmethod
 	def decode(value=None):
@@ -128,20 +132,21 @@ class DisabledPropertyEncoder(BaseEncoder):
 
 class HomePostalAddressPropertyEncoder(BaseEncoder):
 	static = True
+	type = dict, {'street': str, 'zipcode': str, 'city': str}
 
 	@staticmethod
 	def decode(value=None):
 		if value:
 			return [{'street': v[0], 'zipcode': v[1], 'city': v[2]} for v in value]
 		else:
-			return value
+			return None
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return [[v['street'], v['zipcode'], v['city']] for v in value]
 		else:
-			return value
+			return None
 
 
 class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
@@ -152,14 +157,14 @@ class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
 		if value:
 			return dict(value)
 		else:
-			return value
+			return None
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return [[k, v] for k, v in value.items()]
 		else:
-			return value
+			return None
 
 
 class MultiLanguageTextAppcenterPropertyEncoder(BaseEncoder):
@@ -175,14 +180,14 @@ class MultiLanguageTextAppcenterPropertyEncoder(BaseEncoder):
 				res[lang] = txt
 			return res
 		else:
-			return value
+			return None
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return ['[{}] {}'.format(k, v) for k, v in value.items()]
 		else:
-			return value
+			return None
 
 
 class SambaGroupTypePropertyEncoder(BaseEncoder):
@@ -207,6 +212,7 @@ class SambaGroupTypePropertyEncoder(BaseEncoder):
 
 class SambaLogonHoursPropertyEncoder(BaseEncoder):
 	static = True
+	type = list, str
 	_weekdays = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')
 
 	@classmethod
@@ -214,7 +220,7 @@ class SambaLogonHoursPropertyEncoder(BaseEncoder):
 		if value:
 			return ['{} {}-{}'.format(cls._weekdays[v/24], v % 24, v % 24 + 1) for v in value]
 		else:
-			return value
+			return None
 
 	@classmethod
 	def encode(cls, value=None):
@@ -225,7 +231,7 @@ class SambaLogonHoursPropertyEncoder(BaseEncoder):
 			except (IndexError, ValueError):
 				raise valueInvalidSyntax, valueInvalidSyntax('One or more entries in sambaLogonHours have invalid syntax.'), sys.exc_info()[2]
 		else:
-			return value
+			return None
 
 
 class StringCaseInsensitiveResultLowerBooleanPropertyEncoder(BaseEncoder):
@@ -268,6 +274,7 @@ class StringIntBooleanPropertyEncoder(BaseEncoder):
 
 class StringIntPropertyEncoder(BaseEncoder):
 	static = False
+	type = int
 
 	def decode(self, value=None):
 		if value in ('',  None):
@@ -320,6 +327,7 @@ class DnListPropertyEncoder(BaseEncoder):
 	class DnsList(list):
 		# a list with an additional member variable
 		objs = None
+		type = list, str
 
 		def __deepcopy__(self, memodict=None):
 			return list(self)
@@ -478,6 +486,7 @@ class DnPropertyEncoder(BaseEncoder):
 	class DnStr(str):
 		# a string with an additional member variable
 		obj = None
+		type = str
 
 		def __deepcopy__(self, memodict=None):
 			return str(self)
