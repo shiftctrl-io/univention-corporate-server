@@ -65,13 +65,13 @@ class BaseEncoder(object):
 
 class Base64BinaryPropertyEncoder(BaseEncoder):
 	static = False
-	type = str
+	type = 'Base64Binary'
 
 	def decode(self, value=None):
 		if value:
 			return Base64BinaryProperty(self.property_name, value)
 		else:
-			return None
+			return value
 
 	def encode(self, value=None):
 		if value:
@@ -79,7 +79,7 @@ class Base64BinaryPropertyEncoder(BaseEncoder):
 				value = Base64BinaryProperty(self.property_name, raw_value=value)
 			return value.encoded
 		else:
-			return None
+			return value
 
 
 class Base64Bzip2BinaryPropertyEncoder(BaseEncoder):
@@ -107,14 +107,14 @@ class DatePropertyEncoder(BaseEncoder):
 		if value:
 			return datetime.date(*time.strptime(value, '%Y-%m-%d')[0:3])
 		else:
-			return None
+			return value
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return value.strftime('%Y-%m-%d')
 		else:
-			return None
+			return value
 
 
 class DisabledPropertyEncoder(BaseEncoder):
@@ -139,14 +139,14 @@ class HomePostalAddressPropertyEncoder(BaseEncoder):
 		if value:
 			return [{'street': v[0], 'zipcode': v[1], 'city': v[2]} for v in value]
 		else:
-			return None
+			return value
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return [[v['street'], v['zipcode'], v['city']] for v in value]
 		else:
-			return None
+			return value
 
 
 class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
@@ -157,14 +157,14 @@ class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
 		if value:
 			return dict(value)
 		else:
-			return None
+			return value
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return [[k, v] for k, v in value.items()]
 		else:
-			return None
+			return value
 
 
 class MultiLanguageTextAppcenterPropertyEncoder(BaseEncoder):
@@ -180,14 +180,14 @@ class MultiLanguageTextAppcenterPropertyEncoder(BaseEncoder):
 				res[lang] = txt
 			return res
 		else:
-			return None
+			return value
 
 	@staticmethod
 	def encode(value=None):
 		if value:
 			return ['[{}] {}'.format(k, v) for k, v in value.items()]
 		else:
-			return None
+			return value
 
 
 class SambaGroupTypePropertyEncoder(BaseEncoder):
@@ -220,7 +220,7 @@ class SambaLogonHoursPropertyEncoder(BaseEncoder):
 		if value:
 			return ['{} {}-{}'.format(cls._weekdays[v/24], v % 24, v % 24 + 1) for v in value]
 		else:
-			return None
+			return value
 
 	@classmethod
 	def encode(cls, value=None):
@@ -231,7 +231,7 @@ class SambaLogonHoursPropertyEncoder(BaseEncoder):
 			except (IndexError, ValueError):
 				raise valueInvalidSyntax, valueInvalidSyntax('One or more entries in sambaLogonHours have invalid syntax.'), sys.exc_info()[2]
 		else:
-			return None
+			return value
 
 
 class StringCaseInsensitiveResultLowerBooleanPropertyEncoder(BaseEncoder):
