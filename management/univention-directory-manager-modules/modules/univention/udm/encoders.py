@@ -132,7 +132,7 @@ class DisabledPropertyEncoder(BaseEncoder):
 
 class HomePostalAddressPropertyEncoder(BaseEncoder):
 	static = True
-	type = dict, {'street': str, 'zipcode': str, 'city': str}
+	type = list, {'street': str, 'zipcode': str, 'city': str}
 
 	@staticmethod
 	def decode(value=None):
