@@ -22,34 +22,30 @@ UDM_API_VERSION = 1
 
 class NoneList(fields.List):
 	def format(self, value):
-		return None if value in ('', None, []) else value
+		return None if value in ('', None, []) else super(NoneList, self).format(value)
 
 	def output(self, key, data, ordered=False, **kwargs):
 		# handle empty lists encoded as an empty strings which lead to
 		# AttributeErrors, when flask_restplus tries to serialize them
 		# happens for example with sambaLogonHours
 		if hasattr(data, key) and getattr(data, key) == '':
-			logger.debug('** getattr(data, %r)=%r', key, getattr(data, key))
 			setattr(data, key, [])
 		super(NoneList, self).output(key, data, ordered, **kwargs)
 
 
 class NoneString(fields.String):
 	def format(self, value):
-		return None if value in ('', None) else value
+		return None if value in ('', None) else super(NoneString, self).format(value)
 
 
 class Base64BinaryProperty2StringOrNone(fields.Raw):
 	def format(self, value):  # type: (Union[Base64BinaryProperty, Text]) -> Union[Text, None]
-		if value == '':
-			return None
-		return value.encoded
+		return None if value in ('', None) else super(Base64BinaryProperty2StringOrNone, self).format(value.encoded)
 
 
 class NoneDateField(fields.Date):
 	def format(self, value):
-		res = None if value in ('', None) else value
-		return super(NoneDateField, self).format(res)
+		return None if value in ('', None) else super(NoneDateField, self).format(value)
 
 
 type2field = {
