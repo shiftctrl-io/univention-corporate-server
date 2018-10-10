@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.uldap.access]) -> BaseUdmModule
-	logger.debug('get_module(module_name={!r}, lo={!r})'.format(module_name, lo))
+	logger.debug('get_module(module_name=%r, lo=%r)', module_name, lo)
 	if lo:
 		udm = Udm(lo, UDM_API_VERSION)
 	else:
@@ -71,18 +71,11 @@ def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.
 
 def get_model(module_name, api, lo=None):
 	# type: (Text, Api, Optional[univention.admin.uldap.access]) -> Dict[Text, fields.Raw]
-	logger.debug('get_model(module_name={!r}, api={!r} lo={!r})'.format(module_name, api, lo))
+	logger.debug('get_model(module_name=%r, api=%r lo=%r)', module_name, api, lo)
 	mod = get_module(module_name=module_name, lo=lo)
 	obj = mod.new()
 	identifying_udm_property = mod.meta.identifying_property
 	identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]
-	res = OrderedDict((
-		('id', fields.String(description='{} ({})'.format(identifying_udm_property, identifying_ldap_attribute))),
-		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
-		('options', fields.List(fields.String, description='List of options.')),
-		('policies', fields.List(fields.String, description='List of DNs to policy objects, that apply for this object.')),
-		('position', fields.String(description='DN of LDAP node below which the object is located.')),
-	))  # type: Dict[Text, fields.Raw]
 	props_is_multivalue = dict((k, bool(v.multivalue)) for k, v in obj._udm1_object.descriptions.iteritems())  # type: Dict[Text, bool]
 	props = dict(
 		(prop, NoneList(NoneString) if is_multivalue else NoneString)
@@ -127,6 +120,12 @@ def get_model(module_name, api, lo=None):
 		except KeyError:
 			pass
 	props = OrderedDict((k, props[k]) for k in sorted(props.keys()))
-	res['props'] = fields.Nested(api.model('{}Props'.format(_classify_name(mod.name)), props), skip_none=True)
-	res['uri'] = fields.Url('{}_{}'.format(mod.name, '_'.join(mod.name.split('/'))))
-	return res
+	return OrderedDict((
+		('id', fields.String(description='{} ({})'.format(identifying_udm_property, identifying_ldap_attribute))),
+		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
+		('options', fields.List(fields.String, description='List of options.')),
+		('policies', fields.List(fields.String, description='List of DNs to policy objects, that apply for this object.')),
+		('position', fields.String(description='DN of LDAP node below which the object is located.')),
+		('props', fields.Nested(api.model('{}Props'.format(_classify_name(mod.name)), props), skip_none=True)),
+		('uri', fields.Url('api.{}_{}'.format(api.name, '_'.join(mod.name.split('/'))), absolute=True)),
+	))

@@ -1,10 +1,12 @@
 from __future__ import absolute_import, unicode_literals
 import logging
 from ldap.filter import filter_format
-from flask import Flask
-from flask_restplus import Api, Resource, abort, reqparse
+from flask import Blueprint, Flask
+from flask_restplus import Api, Namespace, Resource, abort, reqparse
+
 from werkzeug.contrib.fixers import ProxyFix
 from univention.config_registry import ConfigRegistry
+from ..exceptions import UdmError
 from .users_user import get_model, get_module
 
 try:
@@ -38,15 +40,17 @@ ucr.load()
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
+ns_users_user = Namespace('users-user', description='user related operations')
+api_model_users_user = ns_users_user.model('users-user', get_model(module_name='users/user', api=ns_users_user))
+blueprint = Blueprint('api', __name__, url_prefix='/udm')
 api = Api(
-	app,
-	doc='/udm',
-	prefix='/udm',
+	blueprint,
 	version='1.0',
 	title='UDM users/user API',
 	description='A simple UDM users/user API',
 )
-users_user_api_model = api.model('UsersUser', get_model(module_name='users/user', api=api))
+api.add_namespace(ns_users_user, path='/users/user')
+app.register_blueprint(blueprint)
 
 
 def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObject
@@ -75,28 +79,23 @@ def obj2dict(obj):  # type: (BaseUdmObject) -> Dict[Text, Any]
 	}
 
 
-@api.route('/udm/users/user', endpoint='users/user_users_user')
+@ns_users_user.route('/')
 class UsersUserList(Resource):
 	"""Shows a list of all todos, and lets you POST to add new tasks"""
-	@api.doc('list_users_user')
-	@api.marshal_list_with(users_user_api_model, skip_none=True)
+	@ns_users_user.doc('List users/user objects.')
+	@ns_users_user.marshal_list_with(api_model_users_user, skip_none=True)
 	def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 		"""List all users/user"""
-		res = []
-		for obj in get_module(module_name='users/user').search():
-			if len(res) > 2:  # TODO: remove this
-				break
-			res.append(obj2dict(obj))
+		res = [obj2dict(obj) for obj in get_module(module_name='users/user').search()]
 		if not res:
 			abort(404, 'No {!r} objects exist.'.format('users/user'))
 		return res, 200
 
-	@api.doc('create_users_user')
-	@api.expect(users_user_api_model)
-	@api.marshal_with(users_user_api_model, skip_none=True, code=201)
+	@ns_users_user.doc('Create users/user object.')
+	@ns_users_user.expect(api_model_users_user)
+	@ns_users_user.marshal_with(api_model_users_user, skip_none=True, code=201)
 	def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
 		"""Create a new users/user"""
-		logger.debug('UsersUserList.post() api.payload={!r}'.format(api.payload))
 		mod = get_module(module_name='users/user')
 		identifying_property = mod.meta.identifying_property
 		parser = reqparse.RequestParser()
@@ -106,7 +105,6 @@ class UsersUserList(Resource):
 		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
 		parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
 		args = parser.parse_args()
-		logger.debug('UsersUserList.post() args={!r}'.format(args))
 		obj = mod.new()  # type: BaseUdmObject
 		obj.options = args.get('options') or []
 		obj.policies = args.get('policies') or []
@@ -114,25 +112,28 @@ class UsersUserList(Resource):
 		obj.props = args['props']
 		setattr(obj.props, mod.meta.identifying_property, args.get('id'))
 		logger.info('Creating {!r}...'.format(obj))
-		obj.save().reload()
+		try:
+			obj.save().reload()
+		except UdmError as exc:
+			abort(400, str(exc))
 		return obj2dict(obj), 201
 
 
-@api.route('/udm/users/user/<string:id>')
-@api.response(404, 'User not found')
-@api.param('id', 'The objects ID (username, group name etc).')
+@ns_users_user.route('/<string:id>')
+@ns_users_user.response(404, 'User not found')
+@ns_users_user.param('id', 'The objects ID (username, group name etc).')
 class UsersUser(Resource):
 	"""Show a single users/user item and lets you delete them"""
 
-	@api.doc('get_users_user')
-	@api.marshal_with(users_user_api_model, skip_none=True)
+	@ns_users_user.doc('Get users/user object.')
+	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
 	def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 		"""Fetch a given resource"""
 		obj = search_single_object('users/user', id)
 		return obj2dict(obj), 200
 
-	@api.doc('delete_users_user')
-	@api.response(204, 'User deleted')
+	@ns_users_user.doc('Delete users/user object.')
+	@ns_users_user.response(204, 'User deleted')
 	def delete(self, id):  # type: (Text) -> Tuple[Text, int]
 		"""Delete a user given its username"""
 		obj = search_single_object('users/user', id)
@@ -140,11 +141,10 @@ class UsersUser(Resource):
 		obj.delete()
 		return '', 204
 
-	@api.expect(users_user_api_model)
-	@api.marshal_with(users_user_api_model, skip_none=True)
+	@ns_users_user.expect(api_model_users_user)
+	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
 	def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 		"""Update a user given its username"""
-		logger.debug('UsersUser.put() id={!r} api.payload={!r}'.format(id, api.payload))
 		obj = search_single_object('users/user', id)
 		parser = reqparse.RequestParser()
 		parser.add_argument('options', type=list, help='Options of object [optional].')
@@ -152,28 +152,26 @@ class UsersUser(Resource):
 		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
 		parser.add_argument('props', type=dict, help='Properties of object [optional].')
 		args = parser.parse_args()
-		logger.debug('UsersUserList.put() args={!r}'.format(args))
 		logger.info('Updating {!r}...'.format(obj))
-		obj.options = args.get('options') or obj.options
-		obj.policies = args.get('policies') or obj.policies
-		obj.position = args.get('position') or obj.position
-		logger.debug('UsersUserList.put() 0 obj.props={!r}'.format(obj.props))
-		for prop, value in (args.get('props') or {}).items():
+		changed = False
+		for udm_attr in ('options', 'policies', 'position'):
+			if args.get(udm_attr) is not None:
+				setattr(obj, udm_attr, args[udm_attr])
+				changed = True
+		for prop, value in (args.get('props') or {}).iteritems():
 			if getattr(obj.props, prop) == '' and value is None:
 				# Ignore values we set to None earlier (instead of ''), so they
 				# wouldn't be shown in the API.
-				logger.debug(
-					'UsersUserList.put() ignoring prop=%r getattr(obj.props, prop)=%r value=%r',
-					prop, getattr(obj.props, prop), value)
 				continue
 			if getattr(obj.props, prop) != value:
-				logger.debug(
-					'UsersUserList.put() setting prop=%r getattr(obj.props, prop)=%r value=%r',
-					prop, getattr(obj.props, prop), value)
 				setattr(obj.props, prop, value)
-		logger.debug('UsersUserList.put() 1 obj.props={!r}'.format(obj.props))
-		obj.save()
-		return obj2dict(obj), 201
+				changed = True
+		if changed:
+			try:
+				obj.save().reload()
+			except UdmError as exc:
+				abort(400, str(exc))
+		return obj2dict(obj), 200
 
 
 if __name__ == '__main__':
