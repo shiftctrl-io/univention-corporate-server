@@ -1,0 +1,17 @@
+[Unit]
+Description=univention-directory-manager-http-api
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=root
+Group=root
+Restart=always
+ExecStart=/usr/bin/gunicorn --config /etc/gunicorn.d/univention-directory-manager-http-api univention.udm.http_api.api:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+#WorkingDirectory=/var/spool/
+#Environment=PYTHONPATH='/path/to/mysite'
+PrivateTmp=true

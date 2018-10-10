@@ -66,3 +66,19 @@ Description: UCS - Command-line based administration tools
  integrated, directory driven solution for managing
  corporate environments. For more information about UCS,
  refer to: http://www.univention.de/
+
+Package: univention-directory-manager-http-api
+Architecture: all
+Depends: ${misc:Depends},
+ python-univention-directory-manager (= ${binary:Version}),
+ python-flask,
+ python-jsonschema,
+ gunicorn (>=19.6.0),
+ python-setproctitle,
+Description: HTTP-API for the Univention Directory Manager modules
+ This package contains a HTTP-API service to manage UCS UDM objects.
+ .
+ It is part of Univention Corporate Server (UCS), an
+ integrated, directory driven solution for managing
+ corporate environments. For more information about UCS,
+ refer to: http://www.univention.de/

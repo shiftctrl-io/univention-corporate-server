@@ -1,0 +1,2 @@
+modules/univention/udm/http_api/ usr/share/pyshared/univention/udm/
+contrib/flask-restplus-0.12.2.dev0.linux-x86_64.tar.bz2 usr/share/univention-directory-manager-http-api

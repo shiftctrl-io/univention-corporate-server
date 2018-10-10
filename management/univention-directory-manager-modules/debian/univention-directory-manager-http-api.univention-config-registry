@@ -1,0 +1,7 @@
+Type: file
+File: etc/apache2/sites-available/univention-directory-manager-http-api.conf
+Variables: directory/manager/http_api/wsgi_server/port
+Variables: directory/manager/http_api/URL_root
+
+Type: file
+File: etc/gunicorn.d/univention-directory-manager-http-api

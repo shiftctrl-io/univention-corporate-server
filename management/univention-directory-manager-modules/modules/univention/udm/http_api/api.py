@@ -22,6 +22,9 @@ console_handler.setFormatter(logging.Formatter(LOG_MESSAGE_FORMAT, LOG_DATETIME_
 flask_rp_logger = logging.getLogger('flask_restplus')
 flask_rp_logger.setLevel(logging.DEBUG)
 flask_rp_logger.addHandler(console_handler)
+gunicorn_logger = logging.getLogger('gunicorn.glogging.Logger')
+gunicorn_logger.setLevel(logging.DEBUG)
+gunicorn_logger.addHandler(console_handler)
 udm_logger = logging.getLogger('univention.udm')
 udm_logger.setLevel(logging.DEBUG)
 udm_logger.addHandler(console_handler)
@@ -35,9 +38,15 @@ ucr.load()
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
-api = Api(app, version='1.0', title='UDM users/user API', description='A simple UDM users/user API')
-ns = api.namespace('users/user', description='Operations on users/user objects.')
-users_user_api_model = ns.model('UsersUser', get_model(module_name='users/user', api=api))
+api = Api(
+	app,
+	doc='/udm',
+	prefix='/udm',
+	version='1.0',
+	title='UDM users/user API',
+	description='A simple UDM users/user API',
+)
+users_user_api_model = api.model('UsersUser', get_model(module_name='users/user', api=api))
 
 
 def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObject
@@ -66,11 +75,11 @@ def obj2dict(obj):  # type: (BaseUdmObject) -> Dict[Text, Any]
 	}
 
 
-@ns.route('/')
+@api.route('/udm/users/user', endpoint='users/user_users_user')
 class UsersUserList(Resource):
 	"""Shows a list of all todos, and lets you POST to add new tasks"""
-	@ns.doc('list_users_user')
-	@ns.marshal_list_with(users_user_api_model, skip_none=True)
+	@api.doc('list_users_user')
+	@api.marshal_list_with(users_user_api_model, skip_none=True)
 	def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 		"""List all users/user"""
 		res = []
@@ -82,9 +91,9 @@ class UsersUserList(Resource):
 			abort(404, 'No {!r} objects exist.'.format('users/user'))
 		return res, 200
 
-	@ns.doc('create_users_user')
-	@ns.expect(users_user_api_model)
-	@ns.marshal_with(users_user_api_model, skip_none=True, code=201)
+	@api.doc('create_users_user')
+	@api.expect(users_user_api_model)
+	@api.marshal_with(users_user_api_model, skip_none=True, code=201)
 	def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
 		"""Create a new users/user"""
 		logger.debug('UsersUserList.post() api.payload={!r}'.format(api.payload))
@@ -109,21 +118,21 @@ class UsersUserList(Resource):
 		return obj2dict(obj), 201
 
 
-@ns.route('/<string:id>')
-@ns.response(404, 'User not found')
-@ns.param('id', 'The objects ID (username, group name etc).')
+@api.route('/udm/users/user/<string:id>')
+@api.response(404, 'User not found')
+@api.param('id', 'The objects ID (username, group name etc).')
 class UsersUser(Resource):
 	"""Show a single users/user item and lets you delete them"""
 
-	@ns.doc('get_users_user')
-	@ns.marshal_with(users_user_api_model, skip_none=True)
+	@api.doc('get_users_user')
+	@api.marshal_with(users_user_api_model, skip_none=True)
 	def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 		"""Fetch a given resource"""
 		obj = search_single_object('users/user', id)
 		return obj2dict(obj), 200
 
-	@ns.doc('delete_users_user')
-	@ns.response(204, 'User deleted')
+	@api.doc('delete_users_user')
+	@api.response(204, 'User deleted')
 	def delete(self, id):  # type: (Text) -> Tuple[Text, int]
 		"""Delete a user given its username"""
 		obj = search_single_object('users/user', id)
@@ -131,8 +140,8 @@ class UsersUser(Resource):
 		obj.delete()
 		return '', 204
 
-	@ns.expect(users_user_api_model)
-	@ns.marshal_with(users_user_api_model, skip_none=True)
+	@api.expect(users_user_api_model)
+	@api.marshal_with(users_user_api_model, skip_none=True)
 	def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 		"""Update a user given its username"""
 		logger.debug('UsersUser.put() id={!r} api.payload={!r}'.format(id, api.payload))
@@ -168,4 +177,4 @@ class UsersUser(Resource):
 
 
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0', port=5000)
+	app.run(debug=True, host='0.0.0.0', port=int(ucr.get('directory/manager/http_api/wsgi_server/port', 8999)))

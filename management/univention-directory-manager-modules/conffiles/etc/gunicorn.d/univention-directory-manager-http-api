@@ -1,0 +1,30 @@
+# -*- coding: utf-8 -*-
+@%@UCRWARNING=# @%@
+
+#
+# http://docs.gunicorn.org/en/19.6.0/settings.html
+#
+
+from multiprocessing import cpu_count
+from univention.config_registry import ConfigRegistry
+
+_ucr = ConfigRegistry()
+_ucr.load()
+
+mode = 'wsgi'
+# working_dir = '/tmp/'
+user = 'root'
+group = 'root'
+bind = '127.0.0.1:{}'.format(_ucr.get('directory/manager/http_api/wsgi_server/port', '9899'))
+workers = max(2, min(4, cpu_count()))
+timeout = 60
+reload = _ucr.is_true('directory/manager/http_api/wsgi_server/reload')
+loglevel = _ucr.get('directory/manager/http_api/wsgi_server/loglevel', 'debug')
+capture_output = _ucr.get('directory/manager/http_api/wsgi_server/capture_output', 'True')
+accesslog = _ucr.get(
+	'directory/manager/http_api/wsgi_server/accesslog',
+	'/var/log/univention/udm-http-api/gunicorn_access.log')
+errorlog = _ucr.get(
+	'directory/manager/http_api/wsgi_server/errorlog',
+	'/var/log/univention/udm-http-api/gunicorn_error.log')
+proc_name = 'univention-directory-manager-http-api'
