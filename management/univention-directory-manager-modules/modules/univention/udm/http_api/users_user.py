@@ -61,7 +61,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.uldap.access]) -> BaseUdmModule
-	logger.debug('get_module(module_name=%r, lo=%r)', module_name, lo)
 	if lo:
 		udm = Udm(lo, UDM_API_VERSION)
 	else:
@@ -71,7 +70,7 @@ def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.
 
 def get_model(module_name, api, lo=None):
 	# type: (Text, Api, Optional[univention.admin.uldap.access]) -> Dict[Text, fields.Raw]
-	logger.debug('get_model(module_name=%r, api=%r lo=%r)', module_name, api, lo)
+	logger.debug('get_model(module_name=%r, api=%s(%r) lo=%r)', module_name, api.__class__.__name__, api.name, lo)
 	mod = get_module(module_name=module_name, lo=lo)
 	obj = mod.new()
 	identifying_udm_property = mod.meta.identifying_property
@@ -88,33 +87,23 @@ def get_model(module_name, api, lo=None):
 			if hasattr(encoder.type, '__iter__'):
 				# nested object or list
 				prop_type, content_desc = encoder.type
-				if prop_type is dict:
-					field_type = fields.Nested
-					field_kwargs = {'skip_none': True}
-					try:
-						nested_structure = dict((k, type2field[v]) for k, v in content_desc.items())
-					except KeyError:
-						raise ValueError('Unknown encoder type in nested encoder: {!r}'.format(encoder.type))
-					else:
-						field_content = api.model('{}Prop_{}'.format(_classify_name(mod.name), prop), nested_structure)
-				elif prop_type is list:
+				if prop_type is list:
 					field_type = NoneList
-					field_kwargs = {}
 					if isinstance(content_desc, dict):
 						try:
-							nested_structure = dict((k, type2field[v]) for k, v in content_desc.items())
+							nested_structure = dict((k, type2field[v](attribute=k)) for k, v in content_desc.items())
 						except KeyError:
 							raise ValueError('Unknown encoder type in nested encoder: {!r}'.format(encoder.type))
 						else:
 							field_content = fields.Nested(
-								api.model('{}Prop_{}'.format(_classify_name(mod.name), prop), nested_structure),
+								api.model('{}_{}'.format(_classify_name(mod.name), prop), nested_structure),
 								skip_none=True
 							)
 					else:
 						field_content = type2field[content_desc]
 				else:
-					raise ValueError('Unknown encoder type: {!r}'.format(encoder.type))
-				props[prop] = field_type(field_content, **field_kwargs)
+					raise NotImplementedError('Unknown encoder type: {!r}'.format(encoder.type))
+				props[prop] = field_type(field_content)
 			else:
 				props[prop] = type2field[encoder.type]
 		except KeyError:
