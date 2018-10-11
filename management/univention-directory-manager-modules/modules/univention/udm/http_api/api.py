@@ -59,11 +59,13 @@ def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObjec
 	filter_s = filter_format('%s=%s', (identifying_property, id))
 	res = list(mod.search(filter_s))
 	if len(res) == 0:
-		abort(404, 'Object with id ({}) {!r} not found.'.format(identifying_property, id))
+		msg = 'Object with id ({}) {!r} not found.'.format(identifying_property, id)
+		logger.error('404: %s', msg)
+		abort(404, msg)
 	elif len(res) == 1:
 		return res[0]
 	else:
-		logger.error('More than on %r object found, using filter %r.', module_name, filter_s)
+		logger.error('500: More than on %r object found, using filter %r.', module_name, filter_s)
 		abort(500)
 
 
@@ -88,7 +90,9 @@ class UsersUserList(Resource):
 		"""List all users/user"""
 		res = [obj2dict(obj) for obj in get_module(module_name='users/user').search()]
 		if not res:
-			abort(404, 'No {!r} objects exist.'.format('users/user'))
+			msg = 'No {!r} objects exist.'.format('users/user')
+			logger.error('404: %s', msg)
+			abort(404, msg)
 		return res, 200
 
 	@ns_users_user.doc('Create users/user object.')
@@ -116,6 +120,7 @@ class UsersUserList(Resource):
 		try:
 			obj.save().reload()
 		except UdmError as exc:
+			logger.error('400: %s', exc)
 			abort(400, str(exc))
 		return obj2dict(obj), 201
 
@@ -171,6 +176,7 @@ class UsersUser(Resource):
 			try:
 				obj.save().reload()
 			except UdmError as exc:
+				logger.error('400: %s', exc)
 				abort(400, str(exc))
 		return obj2dict(obj), 200
 
