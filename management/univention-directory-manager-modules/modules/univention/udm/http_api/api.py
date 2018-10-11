@@ -109,7 +109,8 @@ class UsersUserList(Resource):
 		obj.options = args.get('options') or []
 		obj.policies = args.get('policies') or []
 		obj.position = args.get('position') or 'cn=users,{}'.format(ucr['ldap/base'])
-		obj.props = args['props']
+		for k, v in args['props'].items():
+			setattr(obj.props, k, v)
 		setattr(obj.props, mod.meta.identifying_property, args.get('id'))
 		logger.info('Creating {!r}...'.format(obj))
 		try:
