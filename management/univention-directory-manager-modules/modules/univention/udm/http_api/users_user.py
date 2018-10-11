@@ -65,7 +65,7 @@ def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.
 	if lo:
 		udm = Udm(lo, UDM_API_VERSION)
 	else:
-		udm = Udm.using_admin(UDM_API_VERSION)
+		udm = Udm.using_admin().version(UDM_API_VERSION)
 	return udm.get(module_name)
 
 
