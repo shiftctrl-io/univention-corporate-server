@@ -16,25 +16,6 @@ except ImportError:
 	pass
 
 
-LOG_MESSAGE_FORMAT ='%(asctime)s %(levelname)-7s %(module)s.%(funcName)s:%(lineno)d  %(message)s'
-LOG_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-console_handler.setFormatter(logging.Formatter(LOG_MESSAGE_FORMAT, LOG_DATETIME_FORMAT))
-flask_rp_logger = logging.getLogger('flask_restplus')
-flask_rp_logger.setLevel(logging.DEBUG)
-flask_rp_logger.addHandler(console_handler)
-gunicorn_logger = logging.getLogger('gunicorn.glogging.Logger')
-gunicorn_logger.setLevel(logging.DEBUG)
-gunicorn_logger.addHandler(console_handler)
-udm_logger = logging.getLogger('univention.udm')
-udm_logger.setLevel(logging.DEBUG)
-udm_logger.addHandler(console_handler)
-logger = logging.getLogger(__name__)
-if __name__ == '__main__':
-	logger.setLevel(logging.DEBUG)
-	logger.addHandler(console_handler)
-
 ucr = ConfigRegistry()
 ucr.load()
 
@@ -51,6 +32,23 @@ api = Api(
 )
 api.add_namespace(ns_users_user, path='/users/user')
 app.register_blueprint(blueprint)
+
+LOG_MESSAGE_FORMAT ='%(asctime)s %(levelname)-7s %(module)s.%(funcName)s:%(lineno)d  %(message)s'
+LOG_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+flask_rp_logger = logging.getLogger('flask_restplus')
+gunicorn_logger = logging.getLogger('gunicorn')
+udm_logger = logging.getLogger('univention')
+for handler in app.logger.handlers:
+	handler.setLevel(logging.DEBUG)
+	handler.setFormatter(logging.Formatter(LOG_MESSAGE_FORMAT, LOG_DATETIME_FORMAT))
+	flask_rp_logger.addHandler(handler)
+	gunicorn_logger.addHandler(handler)
+	udm_logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG)
+flask_rp_logger.setLevel(logging.DEBUG)
+gunicorn_logger.setLevel(logging.DEBUG)
+udm_logger.setLevel(logging.DEBUG)
+logger = app.logger
 
 
 def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObject
