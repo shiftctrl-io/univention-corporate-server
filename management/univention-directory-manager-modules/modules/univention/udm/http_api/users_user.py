@@ -22,7 +22,7 @@ UDM_API_VERSION = 1
 
 class NoneList(fields.List):
 	def format(self, value):
-		return None if value == '' else super(NoneList, self).format(value)
+		return None if value in ('', None, []) else super(NoneList, self).format(value)
 
 	def output(self, key, data, ordered=False, **kwargs):
 		# handle empty lists encoded as an empty strings which lead to
