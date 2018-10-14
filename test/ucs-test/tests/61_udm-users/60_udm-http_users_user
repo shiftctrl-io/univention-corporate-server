@@ -1,0 +1,317 @@
+#!/usr/share/ucs-test/runner python
+# -*- coding: utf-8 -*-
+## desc: Test CRUD of users/user objects using the UDM HTTP-API
+## exposure: dangerous
+## roles: [domaincontroller_master]
+## packages: [univention-directory-manager-http-api]
+## bugs: []
+
+import logging
+import pprint
+from unittest import main, TestCase
+from six import string_types
+import requests
+try:
+	from urlparse import urljoin
+except ImportError:
+	# Python 3
+	from urllib.parse import urljoin
+import univention.testing.utils as utils
+from univention.testing.strings import random_string, random_username
+from univention.testing.udm import UCSTestUDM, UCSTestUDM_CreateUDMObjectFailed
+from univention.testing.ucr import UCSTestConfigRegistry
+from univention.admin.uexceptions import noObject
+from univention.udm import Udm
+
+try:
+	from typing import Any, Callable, Dict, List, Union
+except ImportError:
+	pass
+
+
+class UdmHttpApiTestBase(TestCase):
+	user_objects = []
+	mail_domain = ''
+	ucr_test = None
+	udm_test = None
+
+	@classmethod
+	def setUpClass(cls):
+		logger = logging.getLogger('univention')
+		handler = logging.StreamHandler()
+		handler.setLevel(logging.DEBUG)
+		logger.addHandler(handler)
+		logger.setLevel(logging.DEBUG)
+
+		cls.udm_test = UCSTestUDM()
+		cls.ucr_test = UCSTestConfigRegistry()
+		cls.ucr_test.load()
+
+		cls.root_url = 'https://{}.{}/udm/'.format(cls.ucr_test['hostname'], cls.ucr_test['domainname'])
+		cls.users_user_url = urljoin(cls.root_url, 'users/user/')
+
+		try:
+			cls.mail_domain = cls.ucr_test['mail/hosteddomains'].split()[0]
+		except (AttributeError, IndexError):
+			cls.mail_domain = cls.ucr_test['domainname']
+			try:
+				cls.udm_test.create_object(
+					'mail/domain',
+					position='cn=domain,cn=mail,{}'.format(cls.ucr_test['ldap/base']),
+					name=cls.mail_domain,
+					wait_for_replication=True
+				)
+			except UCSTestUDM_CreateUDMObjectFailed as exc:
+				print('Creating mail domain {!r} failed: {}'.format(cls.mail_domain, exc))
+
+	@classmethod
+	def tearDownClass(cls):
+		for obj in cls.user_objects:
+			try:
+				obj.delete()
+				print('tearDownClass(): Deleted {!r}.'.format(obj))
+			except noObject:
+				print('tearDownClass(): Already deleted: {!r}.'.format(obj))
+		cls.ucr_test.revert_to_original_registry()
+		cls.udm_test.cleanup()
+
+	@staticmethod
+	def json(response):
+		if callable(response.json):
+			return response.json()
+		else:
+			return response.json
+
+	@staticmethod
+	def pformat(obj):  # type: (Union[List[Dict[string_types, Any]], Dict[string_types, Any]]) -> string_types
+		return pprint.pformat(obj, indent=4)
+
+	def http_get(self, url):  # type: (string_types) -> Union[List[Dict[string_types, Any]], Dict[string_types, Any]]
+		resp = requests.get(url)
+		resp.raise_for_status()
+		print('ok={!r} status_code={!r} reason={!r}'.format(resp.ok, resp.status_code, resp.reason))
+		if not resp.ok:
+			utils.fail('Error for GET {!r}'.format(url))
+		obj = self.json(resp)
+		print('JSON:\n{}\n'.format(self.pformat(obj)))
+		return obj
+
+	def http_delete(self, url):  # type: (string_types) -> None
+		resp = requests.delete(url)
+		resp.raise_for_status()
+		print('ok={!r} status_code={!r} reason={!r}'.format(resp.ok, resp.status_code, resp.reason))
+		if not resp.ok:
+			utils.fail('Error for DELETE {!r}'.format(url))
+
+	def http_put(self, url, data):
+		# type: (string_types, Dict[string_types, Any]) -> Union[List[Dict[string_types, Any]], Dict[string_types, Any]]
+		resp = requests.put(url, json=data)
+		resp.raise_for_status()
+		print('ok={!r} status_code={!r} reason={!r}'.format(resp.ok, resp.status_code, resp.reason))
+		if not resp.ok:
+			utils.fail('Error for PUT {!r}'.format(url))
+		obj = self.json(resp)
+		print('JSON:\n{}\n'.format(self.pformat(obj)))
+		return obj
+
+	def http_post(self, url, data):
+		# type: (string_types, Dict[string_types, Any]) -> Union[List[Dict[string_types, Any]], Dict[string_types, Any]]
+		resp = requests.post(url, json=data)
+		if not resp.ok and hasattr(resp, 'json'):
+			print('ERROR ({}): {}'.format(resp.status_code, self.json(resp)))
+		resp.raise_for_status()
+		print('ok={!r} status_code={!r} reason={!r}'.format(resp.ok, resp.status_code, resp.reason))
+		obj = self.json(resp)
+		print('JSON:\n{}\n'.format(self.pformat(obj)))
+		return obj
+
+
+class UdmHttpApiTestUsersUser(UdmHttpApiTestBase):
+	def test_01_list_all(self):
+		objs = self.http_get(self.users_user_url)
+		if not isinstance(objs, list):
+			utils.fail('Did not get a list.')
+		# get at least Administrator and Guest
+		found_administrator = False
+		found_guest = False
+		for obj in objs:
+			if not isinstance(obj, dict):
+				utils.fail('Did not get a list of dicts.')
+			if obj['id'] == 'Administrator':
+				found_administrator = True
+			elif obj['id'] == 'Guest':
+				found_guest = True
+			if found_administrator and found_guest:
+				break
+		else:
+			utils.fail('Did not find Administrator and Guest in response.')
+		print('OK: GET <list of users> from UDM HTTP-API.')
+
+	def test_02_get_user(self):
+		hpa = [
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+		]
+		udm_attrs = {
+			'firstname': random_username(),
+			'lastname': random_username(),
+			'username': random_username(),
+			'password': random_username(),
+			'mailHomeServer': self.mail_domain,
+			'mailPrimaryAddress': '{}@{}'.format(random_username(), self.mail_domain),
+		}
+		expected_ldap_attr = {
+			'uid': [udm_attrs['username']],
+			'sn': [udm_attrs['lastname']],
+			'givenName': [udm_attrs['firstname']],
+			'univentionMailHomeServer': [udm_attrs['mailHomeServer']],
+			'mailPrimaryAddress': [udm_attrs['mailPrimaryAddress']],
+			'homePostalAddress': [
+				'{}${}${}'.format(hpa[0]['street'], hpa[0]['zipcode'], hpa[0]['city']),
+				'{}${}${}'.format(hpa[1]['street'], hpa[1]['zipcode'], hpa[1]['city']),
+			]
+		}
+
+		print('Creating users/user object with attrs: {!r}'.format(udm_attrs))
+		user_dn, user_name = self.udm_test.create_user(**udm_attrs)
+		print('Created {!r} ({!r}).'.format(user_dn, user_name))
+		assert user_name == udm_attrs['username']
+		print('Adding homePostalAddress manually, because udm-test cannot do it. homePostalAddress:\n{!r}'.format(
+			self.pformat(hpa)))
+		user_obj = Udm.using_admin().version(1).get('users/user').get(user_dn)
+		user_obj.props.homePostalAddress.extend(hpa)
+		user_obj.save()
+		print('Verifying in LDAP...')
+		utils.verify_ldap_object(
+			user_dn,
+			expected_attr=expected_ldap_attr,
+			strict=False,
+			should_exist=True
+		)
+		print('OK in LDAP.')
+		url = urljoin(self.users_user_url, user_name)
+		obj = self.http_get(url)
+		for obj_attr, expected_value in (
+			('dn', user_dn),
+			('position', 'cn=users,{}'.format(self.ucr_test['ldap/base'])),
+			('id', user_name),
+			('uri', url),
+		):
+			if obj[obj_attr] != expected_value:
+				utils.fail('Tested obj["{}"] - expected: {!r} got: {!r}'.format(obj_attr, expected_value, obj[obj_attr]))
+		del udm_attrs['password']  # TODO: verify password with hash in obj['props']['password']
+		udm_attrs['homePostalAddress'] = hpa
+		for k, v in udm_attrs.items():
+			if k not in obj['props']:
+				utils.fail('Property {!r} missing in obj["props"].'.format(k))
+			if obj['props'][k] != v:
+				utils.fail('Tested obj["props"]["{}"] - expected: {!r} got: {!r}'.format(k, v, obj['props'][k]))
+		print('OK: GET <new user> from UDM HTTP-API.')
+
+	def test_03_remove_user(self):
+		user_dn, user_name = self.udm_test.create_user()
+		print('Created {!r} ({!r}).'.format(user_dn, user_name))
+		print('Verifying in LDAP...')
+		utils.verify_ldap_object(
+			user_dn,
+			strict=False,
+			should_exist=True
+		)
+		print('OK in LDAP.')
+		url = urljoin(self.users_user_url, user_name)
+		self.http_delete(url)
+		print('Verifying deletion in LDAP...')
+		utils.verify_ldap_object(
+			user_dn,
+			should_exist=False
+		)
+		print('OK: DELETE <new user> from UDM HTTP-API.')
+
+	def test_04_modify_user(self):
+		user_dn, user_name = self.udm_test.create_user()
+		print('Created {!r} ({!r}).'.format(user_dn, user_name))
+		print('Verifying in LDAP...')
+		utils.verify_ldap_object(
+			user_dn,
+			strict=False,
+			should_exist=True
+		)
+		print('OK in LDAP.')
+		url = urljoin(self.users_user_url, user_name)
+		hpa = [
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+		]
+		attrs = {
+			'firstname': random_username(),
+			'lastname': random_username(),
+			'description': random_string(),
+			'mailPrimaryAddress': '{}@{}'.format(random_string(), self.mail_domain),
+			'departmentNumber': random_string(),
+			'homePostalAddress': hpa,
+		}
+		print('Modifying {!r} using HTTP-API with props:\n{}'.format(user_name, self.pformat(attrs)))
+		self.http_put(url, {'props': attrs})
+		print('Verifying in LDAP...')
+		utils.verify_ldap_object(
+			user_dn,
+			expected_attr={
+				'sn': [attrs['lastname']],
+				'givenName': [attrs['firstname']],
+				'description': [attrs['description']],
+				'mailPrimaryAddress': [attrs['mailPrimaryAddress']],
+				'departmentNumber': [attrs['departmentNumber']],
+				'homePostalAddress': [
+					'{}${}${}'.format(hpa[0]['street'], hpa[0]['zipcode'], hpa[0]['city']),
+					'{}${}${}'.format(hpa[1]['street'], hpa[1]['zipcode'], hpa[1]['city']),
+				]
+			},
+			strict=False,
+			should_exist=True
+		)
+		print('OK in LDAP.')
+		print('OK: PUT <user> with UDM HTTP-API.')
+
+	def test_05_create_user(self):
+		hpa = [
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+			{'street': random_username(), 'zipcode': random_username(), 'city': random_username()},
+		]
+		udm_attrs = {
+			'firstname': random_username(),
+			'lastname': random_username(),
+			'username': random_username(),
+			'password': random_username(),
+			'mailHomeServer': self.mail_domain,
+			'mailPrimaryAddress': '{}@{}'.format(random_username(), self.mail_domain),
+			'homePostalAddress': hpa,
+		}
+		expected_ldap_attr = {
+			'uid': [udm_attrs['username']],
+			'sn': [udm_attrs['lastname']],
+			'givenName': [udm_attrs['firstname']],
+			'univentionMailHomeServer': [udm_attrs['mailHomeServer']],
+			'mailPrimaryAddress': [udm_attrs['mailPrimaryAddress']],
+			'homePostalAddress': [
+				'{}${}${}'.format(hpa[0]['street'], hpa[0]['zipcode'], hpa[0]['city']),
+				'{}${}${}'.format(hpa[1]['street'], hpa[1]['zipcode'], hpa[1]['city']),
+			]
+		}
+
+		print('Creating users/user object using HTTP-API with props:\n{}'.format(self.pformat(udm_attrs)))
+		resp = self.http_post(self.users_user_url, {'id': udm_attrs['username'], 'props': udm_attrs})
+		assert resp['id'] == udm_attrs['username']
+		print('Verifying in LDAP...')
+		utils.verify_ldap_object(
+			resp['dn'],
+			expected_attr=expected_ldap_attr,
+			strict=False,
+			should_exist=True
+		)
+		print('OK in LDAP.')
+		self.udm_test._cleanup.setdefault('users/user', []).append(resp['dn'])
+		print('OK: POST <new user> to UDM HTTP-API.')
+
+
+if __name__ == '__main__':
+	main(verbosity=2)
