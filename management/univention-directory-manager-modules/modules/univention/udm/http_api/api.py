@@ -21,16 +21,23 @@ ucr.load()
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
-ns_users_user = Namespace('users-user', description='user related operations')
-api_model_users_user = ns_users_user.model('users-user', get_model(module_name='users/user', api=ns_users_user))
 blueprint = Blueprint('api', __name__, url_prefix='/udm')
 api = Api(
 	blueprint,
 	version='1.0',
-	title='UDM users/user API',
-	description='A simple UDM users/user API',
+	title='UDM API',
+	description='A simple UDM API',
 )
-api.add_namespace(ns_users_user, path='/users/user')
+_udm_object_type = 'users/user'
+ns_users_user = Namespace(
+	_udm_object_type.replace('/', '-'),
+	description='{} related operations'.format(_udm_object_type)
+)
+api_model_users_user = ns_users_user.model(
+	_udm_object_type.replace('/', '-'),
+	get_model(module_name=_udm_object_type, api=ns_users_user)
+)
+api.add_namespace(ns_users_user, path='/{}'.format(_udm_object_type))
 app.register_blueprint(blueprint)
 
 LOG_MESSAGE_FORMAT ='%(asctime)s %(levelname)-7s %(module)s.%(funcName)s:%(lineno)d  %(message)s'
@@ -79,26 +86,36 @@ def obj2dict(obj):  # type: (BaseUdmObject) -> Dict[Text, Any]
 	}
 
 
+def docstring_params(*args, **kwargs):
+	def dec_func(obj):
+		obj.__doc__ = obj.__doc__.format(*args, **kwargs)
+		return obj
+	return dec_func
+
+
 @ns_users_user.route('/')
 class UsersUserList(Resource):
-	"""Shows a list of all todos, and lets you POST to add new tasks"""
-	@ns_users_user.doc('List users/user objects.')
+	_udm_object_type = 'users/user'
+
+	@ns_users_user.doc('list')
 	@ns_users_user.marshal_list_with(api_model_users_user, skip_none=True)
+	@docstring_params(_udm_object_type.split('/')[-1])
 	def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
-		"""List all users/user"""
-		res = [obj2dict(obj) for obj in get_module(module_name='users/user').search()]
+		"""List all {} objects."""
+		res = [obj2dict(obj) for obj in get_module(module_name=self._udm_object_type).search()]
 		if not res:
-			msg = 'No {!r} objects exist.'.format('users/user')
+			msg = 'No {!r} objects exist.'.format(self._udm_object_type)
 			logger.error('404: %s', msg)
 			abort(404, msg)
 		return res, 200
 
-	@ns_users_user.doc('Create users/user object.')
+	@ns_users_user.doc('create')
 	@ns_users_user.expect(api_model_users_user)
 	@ns_users_user.marshal_with(api_model_users_user, skip_none=True, code=201)
+	@docstring_params(_udm_object_type.split('/')[-1])
 	def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
-		"""Create a new users/user"""
-		mod = get_module(module_name='users/user')
+		"""Create a new {} object."""
+		mod = get_module(module_name=self._udm_object_type)
 		identifying_property = mod.meta.identifying_property
 		parser = reqparse.RequestParser()
 		parser.add_argument('id', type=str, required=True, help='ID ({}) of object [required].'.format(identifying_property))
@@ -127,29 +144,33 @@ class UsersUserList(Resource):
 @ns_users_user.response(404, 'User not found')
 @ns_users_user.param('id', 'The objects ID (username, group name etc).')
 class UsersUser(Resource):
-	"""Show a single users/user item and lets you delete them"""
+	_udm_object_type = 'users/user'
 
-	@ns_users_user.doc('Get users/user object.')
+	@ns_users_user.doc('get')
 	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
+	@docstring_params(_udm_object_type.split('/')[-1])
 	def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-		"""Fetch a given resource"""
-		obj = search_single_object('users/user', id)
+		"""Fetch a {} object given its usename."""
+		obj = search_single_object(self._udm_object_type, id)
 		return obj2dict(obj), 200
 
-	@ns_users_user.doc('Delete users/user object.')
+	@ns_users_user.doc('delete')
 	@ns_users_user.response(204, 'User deleted')
+	@docstring_params(_udm_object_type.split('/')[-1])
 	def delete(self, id):  # type: (Text) -> Tuple[Text, int]
-		"""Delete a user given its username"""
-		obj = search_single_object('users/user', id)
+		"""Delete a {} object given its username."""
+		obj = search_single_object(self._udm_object_type, id)
 		logger.info('Deleting {!r}...'.format(obj))
 		obj.delete()
 		return '', 204
 
+	@ns_users_user.doc('modify')
 	@ns_users_user.expect(api_model_users_user)
 	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
+	@docstring_params(_udm_object_type.split('/')[-1])
 	def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-		"""Update a user given its username"""
-		obj = search_single_object('users/user', id)
+		"""Update a {} object given its username."""
+		obj = search_single_object(self._udm_object_type, id)
 		parser = reqparse.RequestParser()
 		parser.add_argument('options', type=list, help='Options of object [optional].')
 		parser.add_argument('policies', type=list, help='Policies applied to object [optional].')

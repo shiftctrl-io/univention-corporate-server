@@ -38,7 +38,7 @@ class NoneString(fields.String):
 		return None if value in ('', None) else super(NoneString, self).format(value)
 
 
-class Base64BinaryProperty2StringOrNone(fields.Raw):
+class Base64BinaryProperty2StringOrNone(fields.String):
 	def format(self, value):  # type: (Union[Base64BinaryProperty, Text]) -> Union[Text, None]
 		return None if value in ('', None) else super(Base64BinaryProperty2StringOrNone, self).format(value.encoded)
 
@@ -116,5 +116,5 @@ def get_model(module_name, api, lo=None):
 		('policies', fields.List(fields.String, description='List of DNs to policy objects, that apply for this object.')),
 		('position', fields.String(description='DN of LDAP node below which the object is located.')),
 		('props', fields.Nested(api.model('{}Props'.format(_classify_name(mod.name)), props), skip_none=True)),
-		('uri', fields.Url('api.{}_{}'.format(api.name, '_'.join(mod.name.split('/'))), absolute=True)),
+		('uri', fields.Url('api.{}_{}'.format(api.name, '_'.join(mod.name.split('/'))), absolute=True)),  # TODO: , scheme='https'
 	))
