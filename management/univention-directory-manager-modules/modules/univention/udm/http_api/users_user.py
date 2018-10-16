@@ -17,9 +17,6 @@ except ImportError:
 	pass
 
 
-UDM_API_VERSION = 1
-
-
 class NoneList(fields.List):
 	def format(self, value):
 		return None if value in ('', None, []) else super(NoneList, self).format(value)
@@ -60,18 +57,19 @@ type2field = {
 logger = logging.getLogger(__name__)
 
 
-def get_module(module_name, lo=None):  # type: (Text, Optional[univention.admin.uldap.access]) -> BaseUdmModule
+def get_module(module_name, udm_api_version, lo=None):
+	# type: (Text, int, Optional[univention.admin.uldap.access]) -> BaseUdmModule
 	if lo:
-		udm = Udm(lo, UDM_API_VERSION)
+		udm = Udm(lo, udm_api_version)
 	else:
-		udm = Udm.using_admin().version(UDM_API_VERSION)
+		udm = Udm.using_admin().version(udm_api_version)
 	return udm.get(module_name)
 
 
-def get_model(module_name, api, lo=None):
-	# type: (Text, Api, Optional[univention.admin.uldap.access]) -> Dict[Text, fields.Raw]
+def get_model(module_name, udm_api_version, api, lo=None):
+	# type: (Text, int, Api, Optional[univention.admin.uldap.access]) -> Dict[Text, fields.Raw]
 	logger.debug('get_model(module_name=%r, api=%s(%r) lo=%r)', module_name, api.__class__.__name__, api.name, lo)
-	mod = get_module(module_name=module_name, lo=lo)
+	mod = get_module(module_name=module_name, udm_api_version=udm_api_version, lo=lo)
 	obj = mod.new()
 	identifying_udm_property = mod.meta.identifying_property
 	identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]

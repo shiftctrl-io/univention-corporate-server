@@ -19,12 +19,15 @@ except ImportError:
 ucr = ConfigRegistry()
 ucr.load()
 
+UDM_API_VERSION = 1
+HTTP_API_VERSION = '{}.0'.format(UDM_API_VERSION)
+
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 blueprint = Blueprint('api', __name__, url_prefix='/udm')
 api = Api(
 	blueprint,
-	version='1.0',
+	version=HTTP_API_VERSION,
 	title='UDM API',
 	description='A simple UDM API',
 )
@@ -35,7 +38,7 @@ ns_users_user = Namespace(
 )
 api_model_users_user = ns_users_user.model(
 	_udm_object_type.replace('/', '-'),
-	get_model(module_name=_udm_object_type, api=ns_users_user)
+	get_model(module_name=_udm_object_type, udm_api_version=UDM_API_VERSION, api=ns_users_user)
 )
 api.add_namespace(ns_users_user, path='/{}'.format(_udm_object_type))
 app.register_blueprint(blueprint)
@@ -59,7 +62,7 @@ logger = app.logger
 
 
 def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObject
-	mod = get_module(module_name=module_name)
+	mod = get_module(module_name=module_name, udm_api_version=UDM_API_VERSION)
 	identifying_property = mod.meta.identifying_property
 	filter_s = filter_format('%s=%s', (identifying_property, id))
 	res = list(mod.search(filter_s))
@@ -102,7 +105,7 @@ class UsersUserList(Resource):
 	@docstring_params(_udm_object_type.split('/')[-1])
 	def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 		"""List all {} objects."""
-		res = [obj2dict(obj) for obj in get_module(module_name=self._udm_object_type).search()]
+		res = [obj2dict(obj) for obj in get_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION).search()]
 		if not res:
 			msg = 'No {!r} objects exist.'.format(self._udm_object_type)
 			logger.error('404: %s', msg)
@@ -115,7 +118,7 @@ class UsersUserList(Resource):
 	@docstring_params(_udm_object_type.split('/')[-1])
 	def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
 		"""Create a new {} object."""
-		mod = get_module(module_name=self._udm_object_type)
+		mod = get_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION)
 		identifying_property = mod.meta.identifying_property
 		parser = reqparse.RequestParser()
 		parser.add_argument('id', type=str, required=True, help='ID ({}) of object [required].'.format(identifying_property))
