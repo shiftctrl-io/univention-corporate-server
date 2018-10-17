@@ -36,8 +36,6 @@ univention-directory-manager-modules (13.0.24-4) unstable; urgency=medium
 
  -- Dirk Wiesenthal <wiesenthal@univention.de>  Wed, 10 Oct 2018 13:51:46 +0200
 
->>>>>>> Bug #47861: make error messages more accurate
-
   * Bug #47861: make error messages more accurate
 
  -- Daniel Troeder <troeder@univention.de>  Mon, 15 Oct 2018 11:12:17 +0200
