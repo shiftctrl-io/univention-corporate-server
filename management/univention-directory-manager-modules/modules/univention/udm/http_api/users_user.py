@@ -73,7 +73,7 @@ def get_model(module_name, udm_api_version, api, lo=None):
 	obj = mod.new()
 	identifying_udm_property = mod.meta.identifying_property
 	identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]
-	props_is_multivalue = dict((k, bool(v.multivalue)) for k, v in obj._udm1_object.descriptions.iteritems())  # type: Dict[Text, bool]
+	props_is_multivalue = dict((k, bool(v.multivalue)) for k, v in obj._orig_udm_object.descriptions.iteritems())  # type: Dict[Text, bool]
 	props = dict(
 		(prop, NoneList(NoneString) if is_multivalue else NoneString)
 		for prop, is_multivalue in props_is_multivalue.items()
