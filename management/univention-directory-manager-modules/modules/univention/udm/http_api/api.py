@@ -1,13 +1,16 @@
 from __future__ import absolute_import, unicode_literals
 import logging
 from ldap.filter import filter_format
-from flask import Blueprint, Flask
+from flask import Blueprint, Flask, g, request
+from flask_httpauth import HTTPBasicAuth
 from flask_restplus import Api, Namespace, Resource, abort, reqparse
 
 from werkzeug.contrib.fixers import ProxyFix
 from univention.config_registry import ConfigRegistry
 from ..exceptions import UdmError
 from .models import get_model, get_module
+from ..udm import Udm
+from univention.admin.uexceptions import authFail
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
@@ -22,6 +25,12 @@ ucr.load()
 UDM_API_VERSION = 1
 HTTP_API_VERSION = '{}.0'.format(UDM_API_VERSION)
 
+# https://swagger.io/docs/specification/2-0/authentication/
+authorizations = {
+	'basic': {'type': 'basic'}
+}
+auth = HTTPBasicAuth()
+
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 blueprint = Blueprint('api', __name__, url_prefix='/udm')
@@ -30,6 +39,8 @@ api = Api(
 	version=HTTP_API_VERSION,
 	title='UDM API',
 	description='A simple UDM API',
+	authorizations=authorizations,
+	security='basic',
 )
 _udm_object_type = 'users/user'
 ns_users_user = Namespace(
@@ -96,9 +107,25 @@ def docstring_params(*args, **kwargs):
 	return dec_func
 
 
+@auth.verify_password
+def verify_pw(username, password):
+	logger.debug('*** username=%r password=%r', username, password)
+	if g.get('udm'):
+		logger.error('Already set: g.udm=%r', g.udm)
+		abort(500)
+	if not (username and password):
+		return False
+	try:
+		g.udm = Udm.using_credentials(username, password).version(UDM_API_VERSION)
+		return True
+	except authFail:
+		return False
+
+
 @ns_users_user.route('/')
 class UsersUserList(Resource):
 	_udm_object_type = 'users/user'
+	method_decorators = (auth.login_required,)
 
 	@ns_users_user.doc('list')
 	@ns_users_user.marshal_list_with(api_model_users_user, skip_none=True)
@@ -148,12 +175,19 @@ class UsersUserList(Resource):
 @ns_users_user.param('id', 'The objects ID (username, group name etc).')
 class UsersUser(Resource):
 	_udm_object_type = 'users/user'
+	method_decorators = (auth.login_required,)
 
 	@ns_users_user.doc('get')
 	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
 	@docstring_params(_udm_object_type.split('/')[-1])
 	def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-		"""Fetch a {} object given its usename."""
+		"""Fetch a {} object given its username."""
+		if not request.authorization:
+			logger.error('Unauthorized access!')
+			abort(401)
+		logger.debug('*** g.get(udm)=%r', g.get('udm'))
+		assert g.get('udm') is not None
+		logger.debug('*** username=%r password=%r', request.authorization.username, request.authorization.password)
 		obj = search_single_object(self._udm_object_type, id)
 		return obj2dict(obj), 200
 

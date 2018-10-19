@@ -1,13 +1,30 @@
 import random
 import string
 from bravado.client import SwaggerClient
+from bravado.requests_client import RequestsClient
+from bravado.exception import HTTPUnauthorized
+
+
+HOST = '10.20.30.5'
+SCHEME = 'http'
+SWAGGER_URL = '{}://{}/udm/swagger.json'.format(SCHEME, HOST)
 
 
 def random_str():
 	return ''.join(random.choice(string.ascii_letters) for _ in range(8))
 
 
-client = SwaggerClient.from_url('http://10.20.30.5/udm/swagger.json')
+# CHECK AUTH
+client = SwaggerClient.from_url(SWAGGER_URL)
+try:
+	users = client.users_user.list().result()
+	raise Exception('Could make request without authenticating!')
+except HTTPUnauthorized:
+	pass
+
+http_client = RequestsClient()
+http_client.set_basic_auth(HOST, 'Administrator', 'univention')
+client = SwaggerClient.from_url(SWAGGER_URL, http_client=http_client)
 
 # LIST
 users = client.users_user.list().result()

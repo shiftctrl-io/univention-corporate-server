@@ -72,6 +72,7 @@ Architecture: all
 Depends: ${misc:Depends},
  python-univention-directory-manager (= ${binary:Version}),
  python-flask,
+ python-flask-httpauth,
  python-jsonschema,
  gunicorn (>=19.6.0),
  python-setproctitle,
