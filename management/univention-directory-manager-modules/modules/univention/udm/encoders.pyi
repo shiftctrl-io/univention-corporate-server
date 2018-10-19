@@ -48,6 +48,7 @@ __dn_property_encoder_class_cache = {}  # type: Dict[Text, Type[DnPropertyEncode
 
 class BaseEncoder(object):
 	static = False    # type: bool
+	type_hint = None  # type: Any
 
 	def __init__(self, property_name=None, *args, **kwargs):  # type: (Optional[Text], *Any, **Any) -> None
 		...
