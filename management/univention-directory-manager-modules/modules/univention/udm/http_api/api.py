@@ -7,11 +7,11 @@ from flask_restplus import Api, Namespace, Resource, abort, reqparse
 from werkzeug.contrib.fixers import ProxyFix
 from univention.config_registry import ConfigRegistry
 from ..exceptions import UdmError
-from .users_user import get_model, get_module
+from .models import get_model, get_module
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
-	from univention.udm.base import BaseUdmObject
+	from univention.udm.base import BaseUdmObjectTV
 except ImportError:
 	pass
 
@@ -127,10 +127,10 @@ class UsersUserList(Resource):
 		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
 		parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
 		args = parser.parse_args()
-		obj = mod.new()  # type: BaseUdmObject
+		obj = mod.new()  # type: BaseUdmObjectTV
 		obj.options = args.get('options') or []
 		obj.policies = args.get('policies') or []
-		obj.position = args.get('position') or 'cn=users,{}'.format(ucr['ldap/base'])
+		obj.position = args.get('position') or mod._get_default_object_positions()[0]
 		for k, v in args['props'].items():
 			setattr(obj.props, k, v)
 		setattr(obj.props, mod.meta.identifying_property, args.get('id'))

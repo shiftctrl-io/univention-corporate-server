@@ -9,7 +9,7 @@ from ..encoders import _classify_name
 try:
 	from typing import Dict, Optional, Text, Union
 	import univention.admin.uldap
-	from ..base import BaseUdmModule
+	from ..models.generic import GenericUdmModule
 	from ..encoders import BaseEncoder
 	from ..binary_props import Base64BinaryProperty
 	from flask_restplus import Api
@@ -57,19 +57,16 @@ type2field = {
 logger = logging.getLogger(__name__)
 
 
-def get_module(module_name, udm_api_version, lo=None):
-	# type: (Text, int, Optional[univention.admin.uldap.access]) -> BaseUdmModule
-	if lo:
-		udm = Udm(lo, udm_api_version)
-	else:
-		udm = Udm.using_admin().version(udm_api_version)
+def get_module(module_name, udm_api_version):
+	# type: (Text, int) -> GenericUdmModule
+	udm = Udm.using_admin().version(udm_api_version)
 	return udm.get(module_name)
 
 
-def get_model(module_name, udm_api_version, api, lo=None):
-	# type: (Text, int, Api, Optional[univention.admin.uldap.access]) -> Dict[Text, fields.Raw]
-	logger.debug('get_model(module_name=%r, api=%s(%r) lo=%r)', module_name, api.__class__.__name__, api.name, lo)
-	mod = get_module(module_name=module_name, udm_api_version=udm_api_version, lo=lo)
+def get_model(module_name, udm_api_version, api):
+	# type: (Text, int, Api) -> Dict[Text, fields.Raw]
+	logger.debug('get_model(module_name=%r, api=%s(%r))', module_name, api.__class__.__name__, api.name)
+	mod = get_module(module_name=module_name, udm_api_version=udm_api_version)
 	obj = mod.new()
 	identifying_udm_property = mod.meta.identifying_property
 	identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]
@@ -82,16 +79,16 @@ def get_model(module_name, udm_api_version, api, lo=None):
 	for prop in props.keys():
 		try:
 			encoder = encoders[prop]
-			if hasattr(encoder.type, '__iter__'):
+			if hasattr(encoder.type_hint, '__iter__'):
 				# nested object or list
-				prop_type, content_desc = encoder.type
+				prop_type, content_desc = encoder.type_hint
 				if prop_type is list:
 					field_type = NoneList
 					if isinstance(content_desc, dict):
 						try:
 							nested_structure = dict((k, type2field[v](attribute=k)) for k, v in content_desc.items())
 						except KeyError:
-							raise ValueError('Unknown encoder type in nested encoder: {!r}'.format(encoder.type))
+							raise ValueError('Unknown encoder type in nested encoder: {!r}'.format(encoder.type_hint))
 						else:
 							field_content = fields.Nested(
 								api.model('{}_{}'.format(_classify_name(mod.name), prop), nested_structure),
@@ -100,10 +97,10 @@ def get_model(module_name, udm_api_version, api, lo=None):
 					else:
 						field_content = type2field[content_desc]
 				else:
-					raise NotImplementedError('Unknown encoder type: {!r}'.format(encoder.type))
+					raise NotImplementedError('Unknown encoder type: {!r}'.format(encoder.type_hint))
 				props[prop] = field_type(field_content)
 			else:
-				props[prop] = type2field[encoder.type]
+				props[prop] = type2field[encoder.type_hint]
 		except KeyError:
 			pass
 	props = OrderedDict((k, props[k]) for k in sorted(props.keys()))
