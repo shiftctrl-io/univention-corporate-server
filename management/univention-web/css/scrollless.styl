@@ -113,3 +113,45 @@
 
 		.umcPageFooter
 			display: none
+
+#umcTopContainer
+	position: absolute
+	top: 0
+	bottom: 0
+	left: 0
+	right: 0
+
+.umcMainTabContainer
+	position: absolute
+	top: 48px
+	bottom: 0
+	left: 0
+	right: 0
+
+	> .dijitStackContainerChildWrapper
+		height: 100%
+
+#umcOverviewPage
+	height: 100%
+
+	.umcPageMain
+		height: 100%
+
+		display: flex
+		flex-direction: column
+
+		.umcOverviewPane
+			min-height: 0%
+			height: 100%
+			transition: background-color 0.2s, box-shadow 0.2s
+
+			.dgrid-scroller
+				height: 100%
+				overflow-y: auto
+
+			&.umcOverviewPaneOverflown
+				material-shadow(1)
+				background-color: rgba(0, 0, 0, 0.02)
+
+	.umcPageFooter // TODO move to Page.js noFooter boolean or main.js OverviewPage creation
+		display: none

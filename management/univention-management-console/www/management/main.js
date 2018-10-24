@@ -204,9 +204,9 @@ define([
 				// match separators OR modules with a valid class
 				return matchesPattern && matchesCategory;
 			};
-
-			// set query
 			this.set('query', query);
+
+			domClass.toggle(this.domNode, 'umcOverviewPaneOverflown', this.contentNode.scrollHeight > this.domNode.clientHeight);
 		}
 	});
 
@@ -895,7 +895,7 @@ define([
 			this._tabContainer.watch('selectedChildWidget', lang.hitch(this, function(name, oldModule, newModule) {
 				this._lastSelectedChild = oldModule;
 				this._updateHeaderColor(oldModule, newModule);
-				this._updateScrolllessUMC(newModule);
+				// this._updateScrolllessUMC(newModule); // TODO @remove
 
 				if (!newModule.moduleID) {
 					// this is the overview page, not a module
@@ -1275,7 +1275,7 @@ define([
 			});
 
 			this._searchText = new Text({
-				'class': 'dijitDisplayNone umcGalleryCategoryHeader'
+				'class': 'umcOverviewSearchText dijitDisplayNone'
 			});
 
 			this.renderCategories();
@@ -1461,11 +1461,12 @@ define([
 				ibutton.set('selected', category ? ibutton.categoryID === category.id : false);
 			});
 
-			this._grid.updateQuery(searchPattern, searchQuery, category);
-
 			// update the search label
+			// TODO remove this and the search header. the search string is already in the search box?
 			domClass.toggle(this._searchText.domNode, 'dijitDisplayNone', !!category);
 			this._searchText.set('content', _('Search query ›%s‹', entities.encode(searchPattern)));
+
+			this._grid.updateQuery(searchPattern, searchQuery, category);
 
 			// update the hash
 			this._updateStateHash();
