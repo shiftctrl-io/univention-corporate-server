@@ -29,7 +29,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: univention-directory-manager-modules 6.0.99\n"
 "Report-Msgid-Bugs-To: packages@univention.de\n"
-"POT-Creation-Date: 2018-10-18 13:26+0200\n"
+"POT-Creation-Date: 2018-10-23 12:32+0200\n"
 "PO-Revision-Date: 2016-11-08 14:59+0100\n"
 "Last-Translator: Daniel Tröder <troeder@univention.de>\n"
 "Language-Team: Deutsch <German <packages@univention.de>>\n"
@@ -575,9 +575,9 @@ msgstr "Lokal (Typ: Sicherheit)"
 msgid "Local Group"
 msgstr "Lokale Gruppe"
 
-#: modules/univention/admin/syntax.py:3572
+#: modules/univention/admin/syntax.py:3579
 msgid "Locale"
-msgstr ""
+msgstr "Locale"
 
 #: modules/univention/admin/syntax.py:572
 msgid "Locale subdir name"
@@ -903,11 +903,11 @@ msgstr "Portal-Eintrag"
 msgid "Portal entries can not be added to an empty category"
 msgstr "Portal-Einträge können nicht einer leeren Kategorie zugeordnet werden"
 
-#: modules/univention/admin/syntax.py:3572
+#: modules/univention/admin/syntax.py:3579
 msgid "Position"
 msgstr "Position"
 
-#: modules/univention/admin/syntax.py:1768
+#: modules/univention/admin/syntax.py:1738
 msgid "Post"
 msgstr "Senden"
 
@@ -1458,6 +1458,15 @@ msgstr ""
 msgid "Value has to be in valid json format"
 msgstr ""
 
+#: modules/univention/admin/syntax.py:1326
+#, python-format
+msgid ""
+"Value is neither a valid username (%(bad_username_exc)s) nor an email "
+"address of a hosted domain (%(bad_email_exc)s)."
+msgstr ""
+"Wert ist weder ein gültiger Benutzername (%(bad_username_exc)s) noch eine"
+"E-Mail-Adresses einer verwalteten Domäne (%(bad_email_exc)s)."
+
 #: modules/univention/admin/uexceptions.py:93
 msgid "Value is required."
 msgstr "Ein Wert wird benötigt."
@@ -1470,7 +1479,20 @@ msgstr "Der Wert darf nicht verändert werden."
 msgid "Value may not contain double quotes (\")!"
 msgstr "Der Wert darf kein Anführungszeichen (\") enthalten!"
 
-#: modules/univention/admin/syntax.py:3478
+#: modules/univention/admin/syntax.py:989
+msgid ""
+"A group name may not contain other characters than numbers, letters and dots!"
+msgstr "Ein Gruppenname darf nur Zahlen, Buchstaben und Punkte enthalten."
+
+#: modules/univention/admin/syntax.py:1502
+#: modules/univention/admin/syntax.py:1529
+msgid ""
+"A host name or FQDN may not contain other characters than numbers, letters "
+"and dots!"
+msgstr ""
+"Ein Hostname oder FQDN darf nur Zahlen, Buchstaben und Punkte enthalten."
+
+#: modules/univention/admin/syntax.py:3417
 msgid ""
 "Value may not contain other than numbers, letters, underscore (\"_\") and "
 "minus (\"-\")!"

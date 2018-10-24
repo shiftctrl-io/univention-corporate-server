@@ -81,8 +81,8 @@ msgid "Allow the authentication only on this Microsoft Windows host"
 msgstr "Anmeldung nur an diesem Microsoft Windows-Rechner zulassen"
 
 #: modules/univention/admin/handlers/users/user.py:659
-msgid "Allowed e-mail sender address"
-msgstr "Erlaubte E-Mail-Absender-Adresse"
+msgid "Allowed sender addresses"
+msgstr "Erlaubte Absender-Adressen"
 
 #: modules/univention/admin/handlers/users/user.py:623
 msgid "Alternative e-mail address"
@@ -245,14 +245,14 @@ msgstr "E-Mail-Adresse"
 
 #: modules/univention/admin/handlers/users/user.py:660
 msgid ""
-"E-mail addresses this user is allowed to use as sender address (additionally "
+"E-mail addresses and usernames this user is allowed to use as sender address (additionally "
 "to its own primary and alternative addresses), when the \"Configuration to "
 "prevent forged From addresses\" is enabled (see manual). A username means "
 "this user is allowed to send using the primary and all alternative addresses "
 "of that user. An e-mail address mean this user is allowed to send using only "
 "that e-mail."
 msgstr ""
-"E-Mail-Adressen die dieser Benutzer (zusätzlich zu seinen eigenen primären "
+"E-Mail-Adressen und Benutzernamen die dieser Benutzer (zusätzlich zu seinen eigenen primären "
 "und alternativen Adressen) als Absender verwenden darf, wenn die "
 "\"Konfiguration zur Verhinderung gefälschter Absender-Adressen\" (siehe "
 "Handbuch) aktiviert ist. Ein Benutzername bedeutet, dass dieser Benutzer mit "
