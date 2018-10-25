@@ -413,16 +413,20 @@ define([
 		buildRendering: function() {
 			this.inherited(arguments);
 
+			var headerWrapper = new ContainerWidget({
+				'class': 'umcGridHeaderWraper'
+			});
 			this._header = new ContainerWidget({
 				baseClass: 'umcGridHeader'
 			});
-			this.addChild(this._header);
 			this._statusMessage = new _StatusText({
 				'class': 'umcGridStatus',
 				content: this.initialStatusMessage
 			});
-			this.own(this._statusMessage);
-			this.addChild(this._statusMessage);
+
+			headerWrapper.addChild(this._header);
+			headerWrapper.addChild(this._statusMessage);
+			this.addChild(headerWrapper);
 
 			this._grid = new _Grid(lang.mixin({
 				collection: this.collection,

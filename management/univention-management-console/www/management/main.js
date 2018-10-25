@@ -206,6 +206,14 @@ define([
 			};
 			this.set('query', query);
 
+			this._toggleBoxShadow();
+		},
+
+		updateAfterResize: function() {
+			this._toggleBoxShadow();
+		},
+
+		_toggleBoxShadow: function() {
 			domClass.toggle(this.domNode, 'umcOverviewPaneOverflown', this.contentNode.scrollHeight > this.domNode.clientHeight);
 		}
 	});
@@ -480,20 +488,7 @@ define([
 		_hostInfo: null,
 		_hostMenu: null,
 
-		_resizeDeferred: null,
-		_handleWindowResize: function() {
-			if (this._resizeDeferred && !this._resizeDeferred.isFulfilled()) {
-				this._resizeDeferred.cancel();
-			}
-
-			this._resizeDeferred = tools.defer(lang.hitch(this, function() {
-				this.__updateHeaderAfterResize();
-			}), 200);
-
-			this._resizeDeferred.otherwise(function() { /* prevent logging of exception */ });
-		},
-
-		__updateHeaderAfterResize: function() {
+		updateAfterResize: function() {
 			if (!tools.status('singleModule')) {
 				this._updateMoreTabsVisibility();
 			}
@@ -504,10 +499,6 @@ define([
 			this.setupHeader();
 			this.setupHelpMenu();
 			this.setupPiwikMenu();
-
-			on(window, 'resize', lang.hitch(this, function() {
-				this._handleWindowResize();
-			}));
 		},
 
 		setupHeader: function() {
@@ -844,6 +835,11 @@ define([
 				'class': 'umcMainTabContainer dijitTabContainer dijitTabContainerTop'
 			});
 
+			// TODO relay scroll to Module.js for floating button
+			// on(this._tabContainer.domNode, 'scroll', function(ev) {
+				// console.log('scrolled');
+			// });
+
 			// the tab bar
 			this._tabController = new TabController({
 				'class': 'umcMainTabController dijitTabContainer dijitTabContainerTop-tabs dijitDisplayNone',
@@ -859,6 +855,7 @@ define([
 			});
 
 			this.registerTabSwitchHandling();
+
 
 			// put everything together
 			this._topContainer.addChild(this._header);
@@ -882,6 +879,11 @@ define([
 				topic.publish('/umc/started');
 			}));
 
+			// TODO window
+			on(window, 'resize', lang.hitch(this, function() {
+				this._handleWindowResize();
+			}));
+
 			this._setupStaticGui = true;
 		},
 
@@ -895,7 +897,7 @@ define([
 			this._tabContainer.watch('selectedChildWidget', lang.hitch(this, function(name, oldModule, newModule) {
 				this._lastSelectedChild = oldModule;
 				this._updateHeaderColor(oldModule, newModule);
-				// this._updateScrolllessUMC(newModule); // TODO @remove
+				this._updateScrolllessUMC(oldModule, newModule); // TODO @remove
 
 				if (!newModule.moduleID) {
 					// this is the overview page, not a module
@@ -930,6 +932,20 @@ define([
 				}
 			}));
 		},
+		
+		_resizeDeferred: null,
+		_handleWindowResize: function() {
+			if (this._resizeDeferred && !this._resizeDeferred.isFulfilled()) {
+				this._resizeDeferred.cancel();
+			}
+
+			this._resizeDeferred = tools.defer(lang.hitch(this, function() {
+				this._header.updateAfterResize();
+				this._grid.updateAfterResize();
+			}), 200);
+
+			this._resizeDeferred.otherwise(function() { /* prevent logging of exception */ });
+		},
 
 		_updateHeaderColor: function(oldModule, newModule) {
 			var headerColorCss;
@@ -945,7 +961,26 @@ define([
 			}
 		},
 
-		_updateScrolllessUMC: function(newModule) {
+		_updateScrolllessUMC: function(oldModule, newModule) {
+			if (oldModule) {
+				var oldModuleName = oldModule.isOverview ? 'overview' : oldModule.moduleID;
+				if (oldModule.moduleFlavor) {
+					oldModuleName = lang.replace('{0}-{1}', [oldModuleName, oldModule.moduleFlavor]);
+				}
+				oldModuleName = oldModuleName.replace(/[^a-zA-Z0-9\-]/g, '-');
+				var cssname = lang.replace('scrollless-{0}', [oldModuleName]);
+				domClass.remove(this._tabContainer.domNode, cssname);
+			}
+			var newModuleName = newModule.isOverview ? 'overview' : newModule.moduleID;
+			if (newModule.moduleFlavor) {
+				newModuleName = lang.replace('{0}-{1}', [newModuleName, newModule.moduleFlavor]);
+			}
+			newModuleName = newModuleName.replace(/[^a-zA-Z0-9\-]/g, '-');
+			var cssname = lang.replace('scrollless-{0}', [newModuleName]);
+			domClass.add(this._tabContainer.domNode, cssname);
+			return;
+
+
 			if (has('trident')) {
 				return; // do not apply special css on IE
 			}

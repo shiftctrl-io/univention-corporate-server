@@ -142,6 +142,7 @@ body:not(.umcTouchDevices) .umcGalleryPane .umcGalleryItem:hover
 	material-shadow(2)
 
 // no left/right padding for full size item
+// TODO shadow is cut of with this and scrollless. maybe dont use scrollless on small screens anyway
 @media (max-width: $xxs-max)
 	.umcGalleryPane .umcGalleryWrapperItem
 		padding-left: 0

@@ -1113,6 +1113,7 @@ define([
 			// create the form containing the whole Container as content and add
 			// the form as content of this class
 			this._form = new Form({
+				'class': 'umcUDMDetailForm',
 				widgets: widgets,
 				content: container,
 				moduleStore: this.moduleStore,

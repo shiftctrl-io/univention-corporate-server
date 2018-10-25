@@ -182,7 +182,9 @@ define([
 			// redirect childrens to stack container
 			this.containerNode = this.__container.containerNode;
 
-			this.own(on(baseWindow.doc, 'scroll', lang.hitch(this, function() {
+			// this.own(on(baseWindow.doc, 'scroll', lang.hitch(this, function() {
+			this.own(on(this.domNode, 'scroll', lang.hitch(this, function() {
+				console.log('scroll');
 				if (!this.selected) {
 					return;
 				}
@@ -191,6 +193,9 @@ define([
 				var showScrollToTopButton = dojo.docScroll().y >= 300;
 				domClass.toggle(scrollToTopFloatingButton.domNode, 'shown', showScrollToTopButton);
 				domClass.toggle(scrollToTopFloatingButtonSpacer.domNode, 'shown', showScrollToTopButton);
+			})));
+			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function() {
+				console.log('scroll');
 			})));
 		},
 
