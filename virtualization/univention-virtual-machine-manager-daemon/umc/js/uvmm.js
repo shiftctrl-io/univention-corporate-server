@@ -506,16 +506,13 @@ define([
 
 				var _migrate = lang.hitch(this, function(name) {
 					// send the UMCP command
-					this.showProgress();
 					tools.umcpCommand('uvmm/domain/migrate', {
 						domainURI: ids[ 0 ],
 						targetNodeURI: name
 					}).then(lang.hitch(this, function() {
 						this.moduleStore.onChange();
-						this.hideProgress();
 					}), lang.hitch(this, function() {
 						this.moduleStore.onChange();
-						this.hideProgress();
 					}));
 				});
 
@@ -524,8 +521,8 @@ define([
 
 				var validHosts = array.filter( items, function( item ) {
 					if (targethosts.length > 0) {
-					// if targethosts are defined, offline targethosts have to be filtered, too
-					return targethosts.indexOf(item.label) != -1 && item.available && item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
+						// if targethosts are defined, offline targethosts have to be filtered, too
+						return targethosts.indexOf(item.label) != -1 && item.available && item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
 					} else {
 						return item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
 					}
@@ -1685,6 +1682,8 @@ define([
 			else if (item.type == 'domain' || item.type == 'instance') {
 				if ( !item.node_available ) {
 					iconName += '-off';
+				} else if (item.migrating === true) {
+					iconName += '-migrate';
 				} else if (item.state == 'RUNNING' || item.state == 'IDLE') {
 					iconName += '-on';
 				} else if ( item.state == 'PAUSED' || ( item.state == 'SHUTOFF' && item.suspended ) || (item.state == 'SUSPENDED')) {
@@ -1735,6 +1734,10 @@ define([
 					tooltipContent = lang.replace( _('Name: {name}<br>State: {state}<br>Server: {node}<br>Description: {description}<br>{vnc_port}' ), tooltipData);
 				} else {
 					tooltipContent = lang.replace( _('State: {state}<br>Server: {node}<br>{vnc_port}' ), tooltipData);
+				}
+
+				if (item.migrating === true) {
+					tooltipContent += lang.replace(_('<br>Migrating: {migration_status}'), item);
 				}
 
 				var tooltip = new Tooltip( {
