@@ -64,6 +64,11 @@ class UsersUserObject(GenericObject):
 	"""Better representation of users/user properties."""
 	udm_prop_class = UsersUserObjectProperties
 
+	@property
+	def module_blacklist(self):
+		"""Calculated property that returns a dict containing all UMC modules that should be hidden from view."""
+		return self._orig_udm_object.module_blacklist
+
 
 class UsersUserModule(GenericModule):
 	"""UsersUserObject factory"""

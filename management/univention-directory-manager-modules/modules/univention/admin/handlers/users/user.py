@@ -1512,6 +1512,7 @@ class object(univention.admin.handlers.simpleLdap):
 	def __init__(self, co, lo, position, dn='', superordinate=None, attributes=None):
 		self.groupsLoaded = True
 		self.password_length = 8
+		self._module_blacklist = dict()
 
 		univention.admin.handlers.simpleLdap.__init__(self, co, lo, position, dn, superordinate, attributes=attributes)
 
@@ -1541,15 +1542,36 @@ class object(univention.admin.handlers.simpleLdap):
 			self._unmap_automount_information()
 			self._unmapUnlockTime()
 			self.reload_certificate()
+			policy = self.loadPolicyObject('policies/umc')
+			if policy:
+				self._add_module_blacklist_entries(policy['module_blacklist'])
 			self._load_groups(loadGroups)
 		self.save()
 		if not self.exists():  # TODO: move this block into _ldap_pre_create!
 			self._set_default_group()
 
+	@property
+	def module_blacklist(self):
+		"""Calculated property that returns a dict containing all UMC modules that should be hidden from view."""
+		return self._module_blacklist
+
+	def _add_module_blacklist_entries(self, entries):
+		for entry in entries:
+			parts = entry.split(':', 1)
+			if parts[0] not in self._module_blacklist:
+				self._module_blacklist[parts[0]] = list()
+			if len(parts) == 1:
+				self._module_blacklist[parts[0]] = ['*']
+			elif len(parts) > 1 and '*' not in self._module_blacklist[parts[0]]:
+				self._module_blacklist[parts[0]].append(parts[1])
+
 	def _load_groups(self, loadGroups):
 		if self.exists():
 			if loadGroups:  # this is optional because it can take much time on larger installations, default is true
 				self['groups'] = self.lo.searchDn(filter=filter_format('(&(cn=*)(|(objectClass=univentionGroup)(objectClass=sambaGroupMapping))(uniqueMember=%s))', [self.dn]))
+				for group in self['groups']:
+					policies = self.lo.getPolicies(group)
+					self._add_module_blacklist_entries(policies.get('umcPolicy', {}).get('umcPolicyModuleBlacklist', {}).get('value', []))
 			else:
 				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, 'user: open with loadGroups=false for user %s' % self['username'])
 			self.groupsLoaded = loadGroups
