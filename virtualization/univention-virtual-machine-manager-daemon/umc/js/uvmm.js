@@ -453,6 +453,46 @@ define([
 			});
 		},
 
+		_migrate: function(ids, items) {
+			if (items[0].migrating) {
+				_migrateStatus(ids, items);
+			} else {
+				_migrateDomain(ids, items);
+			}
+		},
+
+		_migrateStatus: function(ids, items) {
+			form = new Form({
+				style: 'max-width: 500px;',
+				widgets: [ {
+					type: Text,
+					name: 'status',
+					content: _( '<p>This machine is currently being migrated.</p>' )
+				}],
+				buttons: [{
+					name: 'postcopy',
+					label: _( 'Switch to postcopy' ),
+					style: 'float: right;',
+					callback: function() {
+						console.log('start postcopy here');
+					}
+				}, {
+					name: 'cancel',
+					label: _('Cancel'),
+					callback: _cleanup
+				}],
+				layout: [ 'status' ]
+			});
+
+			_dialog = new Dialog({
+				title: _('Migrate domain'),
+				content: form,
+				'class': 'umcPopup'
+			});
+
+			_dialog.show();
+		},
+
 		_migrateDomain: function( ids, items ) {
 			var _dialog = null, form = null;
 			var unavailable = array.some( items, function( domain ) {
@@ -1596,7 +1636,7 @@ define([
 				label: _( 'Migrate' ),
 				isStandardAction: false,
 				isMultiAction: true,
-				callback: lang.hitch(this, '_migrateDomain' ),
+				callback: lang.hitch(this, '_migrate' ),
 				canExecute: function(item) {
 					// FIXME need to find out if there are more than one node of this type
 					return !isTerminated(item);
