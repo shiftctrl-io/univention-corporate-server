@@ -3,13 +3,13 @@ import logging
 import datetime
 from collections import OrderedDict
 from flask_restplus import fields
-from ..udm import Udm
+from ..udm import UDM
 from ..encoders import _classify_name
 
 try:
 	from typing import Dict, Optional, Text, Union
 	import univention.admin.uldap
-	from ..models.generic import GenericUdmModule
+	from ..models.generic import GenericModule
 	from ..encoders import BaseEncoder
 	from ..binary_props import Base64BinaryProperty
 	from flask_restplus import Api
@@ -58,8 +58,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_module(module_name, udm_api_version):
-	# type: (Text, int) -> GenericUdmModule
-	udm = Udm.using_admin().version(udm_api_version)
+	# type: (Text, int) -> GenericModule
+	udm = UDM.admin().version(udm_api_version)
 	return udm.get(module_name)
 
 

@@ -9,12 +9,12 @@ from werkzeug.contrib.fixers import ProxyFix
 from univention.config_registry import ConfigRegistry
 from ..exceptions import UdmError
 from .models import get_model, get_module
-from ..udm import Udm
+from ..udm import UDM
 from univention.admin.uexceptions import authFail
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
-	from univention.udm.base import BaseUdmObjectTV
+	from univention.udm.base import BaseObjectTV
 except ImportError:
 	pass
 
@@ -72,7 +72,7 @@ udm_logger.setLevel(logging.DEBUG)
 logger = app.logger
 
 
-def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObject
+def search_single_object(module_name, id):  # type: (Text, Text) -> BaseObject
 	mod = get_module(module_name=module_name, udm_api_version=UDM_API_VERSION)
 	identifying_property = mod.meta.identifying_property
 	filter_s = filter_format('%s=%s', (identifying_property, id))
@@ -88,7 +88,7 @@ def search_single_object(module_name, id):  # type: (Text, Text) -> BaseUdmObjec
 		abort(500)
 
 
-def obj2dict(obj):  # type: (BaseUdmObject) -> Dict[Text, Any]
+def obj2dict(obj):  # type: (BaseObject) -> Dict[Text, Any]
 	identifying_property = obj._udm_module.meta.identifying_property
 	return {
 		'id': getattr(obj.props, identifying_property),
@@ -116,7 +116,7 @@ def verify_pw(username, password):
 	if not (username and password):
 		return False
 	try:
-		g.udm = Udm.using_credentials(username, password).version(UDM_API_VERSION)
+		g.udm = UDM.credentials(username, password).version(UDM_API_VERSION)
 		return True
 	except authFail:
 		return False
@@ -154,7 +154,7 @@ class UsersUserList(Resource):
 		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
 		parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
 		args = parser.parse_args()
-		obj = mod.new()  # type: BaseUdmObjectTV
+		obj = mod.new()  # type: BaseObjectTV
 		obj.options = args.get('options') or []
 		obj.policies = args.get('policies') or []
 		obj.position = args.get('position') or mod._get_default_object_positions()[0]
