@@ -96,6 +96,18 @@ property_descriptions = {
 		may_change=True,
 		identifies=False
 	),
+	'module_blacklist': univention.admin.property(
+		short_description=_('Module blacklist'),
+		long_description=_('Defines a list of umc modules that shall not be presented to the groups users in the UMC'),
+		syntax=udm_syntax.string,
+		multivalue=True,
+		include_in_default_search=True,
+		options=[],
+		dontsearch=True,
+		required=False,
+		may_change=True,
+		identifies=False
+	),
 }
 property_descriptions.update(dict([
 	requiredObjectClassesProperty(),
@@ -110,6 +122,7 @@ layout = [
 		Group(_('General UMC settings'), layout=[
 			'name',
 			'allow',
+			'module_blacklist'
 		]),
 	]),
 	policy_object_tab()
@@ -118,6 +131,7 @@ layout = [
 mapping = udm_mapping.mapping()
 mapping.register('name', 'cn', None, udm_mapping.ListToString)
 mapping.register('allow', 'umcPolicyGrantedOperationSet')
+mapping.register('module_blacklist', 'umcPolicyModuleBlacklist')
 register_policy_mapping(mapping)
 
 

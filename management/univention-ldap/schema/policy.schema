@@ -956,9 +956,16 @@ attributetype ( 1.3.6.1.4.1.10176.1000.308.1.1
 			  EQUALITY caseExactMatch
 			  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
 
+# new UMC policy attribute for module blacklist (UCS 4.3)
+attributetype ( 1.3.6.1.4.1.10176.1000.308.1.2
+			  NAME 'umcPolicyModuleBlacklist'
+			  DESC 'List of blacklisted UMC modules'
+			  EQUALITY caseExactMatch
+			  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
 objectclass ( 1.3.6.1.4.1.10176.1000.308.2.1
 			  NAME 'umcPolicy'
 			  DESC 'Defines a set of allowed UMC operations'
 			  SUP 'univentionPolicy' STRUCTURAL
-			  MAY umcPolicyGrantedOperationSet )
+			  MAY (umcPolicyGrantedOperationSet $ umcPolicyModuleBlacklist))
 
