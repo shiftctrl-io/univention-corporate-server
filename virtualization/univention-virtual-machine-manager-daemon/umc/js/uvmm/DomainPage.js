@@ -459,6 +459,7 @@ define([
 						this._headerButtons.save.set( 'disabled', true );
 						// name should not be editable
 						this._generalForm._widgets.name.set( 'disabled', true );
+						this._stack.selectChild( this._generalPage, true);
 						this.standby( false );
 						return;
 					} else {
