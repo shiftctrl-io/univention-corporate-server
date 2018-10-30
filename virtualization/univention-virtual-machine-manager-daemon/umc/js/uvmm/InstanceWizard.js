@@ -98,13 +98,13 @@ define([
 				return [
 					['details', 'keyname'],
 					['details', 'security_group_ids']
-				]
+				];
 			} else if (this.cloud.type == 'EC2') {
 				return [
 					['details', 'keyname'],
 					['details', 'security_group_ids'],
 					['details', 'network_id']
-				]
+				];
 			}
 		},
 
