@@ -453,10 +453,29 @@ class Domain(PersistentCached):
 		"""
 		Convert libvirt job stats to string and dictionary for string formating.
 		"""
+		# final_stats = {
+		#  'data_processed': 1L, 'data_remaining': 0L, 'data_total': 1L,
+		#  'disk_processed': 0L, 'disk_remaining': 0L, 'disk_total': 0L,
+		#  'downtime': 1L, 'downtime_net': 1L,
+		#  'memory_constant': 1L, 'memory_dirty_rate': 0L, 'memory_iteration': 3L, 'memory_normal': 1L, 'memory_normal_bytes': 1L, 'memory_processed': 1L, 'memory_remaining': 0L, 'memory_total': 1L,
+		#  'setup_time': 1L,
+		#  'time_elapsed': 1L, 'time_elapsed_net': 1L,
+		# }
+		# process_stats = {
+		#  'data_processed': 1L, 'data_remaining': 1L, 'data_total': 1L,
+		#  'disk_processed': 0L, 'disk_remaining': 0L, 'disk_total': 0L,
+		#  'downtime': 1L,
+		#  'memory_constant': 1L, 'memory_dirty_rate': 1L, 'memory_iteration': 1L, 'memory_normal': 1L, 'memory_normal_bytes': 1L, 'memory_processed': 1L, 'memory_remaining': 1L, 'memory_total': 1L,
+		#  'setup_time': 1L,
+		#  'time_elapsed': 1L,
+		#  'type': 2,
+		# }
 		typ = stats.get('type', None)
 		if typ == 0:
 			self.pd.status = ''
 			return ('', {})
+		elif typ is None:
+			fmt = _('Migration completed after %(time)s in %(iteration)d iterations')
 		else:
 			fmt = _('Migration in progress since %(time)s, iteration %(iteration)d')
 		vals = dict(
@@ -791,6 +810,8 @@ class Node(PersistentCached):
 		self.domainCB = [
 			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_LIFECYCLE, self.livecycle_event, None),
 			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_REBOOT, self.reboot_event, None),
+			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION, self.migration_event, None),
+			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_JOB_COMPLETED, self.job_event, None),
 		]
 
 	def livecycle_event(self, conn, dom, event, detail, opaque):
@@ -855,6 +876,50 @@ class Node(PersistentCached):
 							raise
 			finally:
 				domStat._restart = 0
+		except Exception:
+			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
+			# don't crash the event handler
+
+	def migration_event(self, conn, dom, iteration, opaque):
+		"""
+		Handle domain migration events.
+		"""
+		log = logger.getChild('migration')
+		try:
+			log.debug(
+				"Domain %s(%s) iter=%d",
+				dom.name(),
+				dom.ID(),
+				iteration,
+			)
+			uuid = dom.UUIDString()
+			try:
+				domStat = self.domains[uuid]
+			except LookupError:
+				return
+			domStat.migration_status(dom.jobStats())
+		except Exception:
+			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
+			# don't crash the event handler
+
+	def job_event(self, conn, dom, stats, opaque):
+		"""
+		Handle domain job completed events.
+		"""
+		log = logger.getChild('job')
+		try:
+			log.debug(
+				"Domain %s(%s) stats=%r",
+				dom.name(),
+				dom.ID(),
+				stats,
+			)
+			uuid = dom.UUIDString()
+			try:
+				domStat = self.domains[uuid]
+			except LookupError:
+				return
+			domStat.migration_status(stats)
 		except Exception:
 			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
 			# don't crash the event handler
