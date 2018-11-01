@@ -790,7 +790,7 @@ define([
 			this.addChild(page);
 			this.selectChild(page);
 		},
-		
+
 		_addDomain: function(values) {
 			var wizard = null;
 
@@ -1265,7 +1265,7 @@ define([
 			}
 
 			// else type == 'domain'
-			var domainColumns =  [{
+			var domainColumns = [{
 				name: 'label',
 				label: _('Name'),
 				formatter: lang.hitch(this, 'iconFormatter')
@@ -1291,8 +1291,8 @@ define([
 				label: _('Description'),
 				formatter: lang.hitch(this, '_descriptionFormatter')
 			};
-			
-		   var cpuusage = {
+
+			var cpuusage = {
 				name: 'cpuUsage',
 				label: _('CPU usage'),
 				style: 'min-width: 80px;',
@@ -1888,6 +1888,6 @@ define([
 
 		onCloseTab: function() {
 			// event stub
- 		}
+		}
 	});
 });
