@@ -595,6 +595,7 @@ class Data_Domain(object):
 		self.available = None  # None: not set, (True|False) -> node availability
 		self.targethosts = None  # List of node hostnames
 		self.status = ''
+		self.error = ''
 
 
 class Data_Node(object):

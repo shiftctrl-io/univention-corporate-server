@@ -918,6 +918,31 @@ class Node(PersistentCached):
 			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
 			# don't crash the event handler
 
+	def error_event(self, conn, dom, srcpath, devalias, action, reason, opaque):
+		"""
+		Handle IO errors.
+		"""
+		log = logger.getChild('io')
+		try:
+			log.debug(
+				"Domain %s(%s) dev=%s[%s] action=%d reason=%s",
+				dom.name(),
+				dom.ID(),
+				devalias,
+				srcpath,
+				action,
+				reason,
+			)
+			uuid = dom.UUIDString()
+			try:
+				domStat = self.domains[uuid]
+			except LookupError:
+				return
+			domStat.pd.error = _('IO error "%(reason)s" on device "%(device)s"') % dict(reason=reason, device=devalias)
+		except Exception:
+			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
+			# don't crash the event handler
+
 	def close_event(self, conn, reason, opaque):
 		"""
 		Handle connection close event.
@@ -1742,6 +1767,7 @@ def domain_state(uri, domain, state):
 					node.wait_update(domain, stat_key)
 
 			dom_stat.pd.status = ''
+			dom_stat.pd.error = ''
 	except KeyError as ex:
 		logger.error("Domain %s not found", ex)
 		raise NodeError(_('Error managing domain "%(domain)s"'), domain=domain)

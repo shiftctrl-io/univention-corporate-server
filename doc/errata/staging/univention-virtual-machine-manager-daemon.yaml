@@ -7,4 +7,5 @@ fix: 7.0.0-13
 desc: |
  This update addresses the following issues:
  * Add support for post-copy migration.
+ * Report IO errors in UMC frontend.
 bug: [47617,22695,47741]
