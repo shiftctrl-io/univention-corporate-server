@@ -378,7 +378,6 @@ define([
 			page.tabController = new TabController({
 				containerId: this._stack.id,
 				region: 'nav'
-				
 			});
 			page.addChild(page.tabController);
 			this._stack.addChild(page);
