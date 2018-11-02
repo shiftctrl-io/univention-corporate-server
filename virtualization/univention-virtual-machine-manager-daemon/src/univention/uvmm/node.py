@@ -282,7 +282,7 @@ class Domain(PersistentCached):
 		self.node = node
 		self._time_stamp = 0.0
 		self._time_used = 0L
-		self._cpu_usage = 0
+		self._cpu_usage = 0.0
 		self._cache_id = None  # type: Optional[int]
 		self._restart = 0
 		self._redefined = True  # check for <cpu> only once per process as this is quiet expensive
@@ -709,7 +709,7 @@ class Node(PersistentCached):
 
 	"""Container for node statistics."""
 
-	def __init__(self, uri, cache_dir=None):
+	def __init__(self, uri, cache_dir):
 		# type: (str, str) -> None
 		self.cache_dir = cache_dir
 		self.domains = _DomainDict()
@@ -835,6 +835,7 @@ class Node(PersistentCached):
 	def update_once(self):
 		# type: () -> None
 		"""Update once on (re-)connect."""
+		assert self.conn is not None
 		self.pd.name = self.conn.getHostname()
 		info = self.conn.getInfo()
 		self.pd.phyMem = long(info[1]) << 20  # MiB
@@ -1062,6 +1063,7 @@ class Node(PersistentCached):
 		cpu_usage = 0
 		cached_domains = self.domains.keys()
 
+		assert self.conn is not None
 		for dom in self.conn.listAllDomains():
 			uuid = dom.UUIDString()
 			if uuid in self.domains:
@@ -1191,7 +1193,7 @@ class Nodes(dict):
 	def __init__(self):
 		# type: () -> None
 		super(Nodes, self).__init__()
-		self.cache_dir = None
+		self.cache_dir = ''
 
 	def __delitem__(self, uri):
 		# type: (str) -> None
@@ -1604,9 +1606,9 @@ def _domain_edit(node, dom_stat, xml):
 			elif not isinstance(v, basestring):
 				n.attrib[k] = '%s' % v
 
-	xml = ET.tostring(domain)
+	xml_new = ET.tostring(domain)
 	updates_xml = [ET.tostring(device) for device in live_updates]
-	return (xml, updates_xml)
+	return (xml_new, updates_xml)
 
 
 def domain_define(uri, domain):
@@ -1614,6 +1616,7 @@ def domain_define(uri, domain):
 	"""Convert python object to an XML document."""
 	node = node_query(uri)
 	conn = node.conn
+	assert conn is not None
 	logger.debug('PY DUMP: %r' % domain.__dict__)
 
 	# Check for (name,uuid) collision
@@ -1639,7 +1642,7 @@ def domain_define(uri, domain):
 				logger.error(ex)
 				raise NodeError(_('Error retrieving old domain "%(domain)s": %(error)s'), domain=domain.uuid, error=ex.get_error_message())
 
-	old_stat = None
+	old_stat = 0
 	warnings = []
 	if domain.uuid:
 		try:
@@ -1782,6 +1785,7 @@ def domain_state(uri, domain, state):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		dom_stat = node.domains[domain]
 		stat_key = dom_stat.key()
@@ -1815,8 +1819,8 @@ def domain_state(uri, domain, state):
 			}
 			transition = TRANSITION[(dom_stat.pd.state, state)]
 		except KeyError:
-			cur_state = STATES[dom_stat.pd.state]
-			raise NodeError(_('Unsupported state transition %(cur_state)s to %(next_state)s'), cur_state=cur_state, next_state=state)
+			cur_state_ = STATES[dom_stat.pd.state]
+			raise NodeError(_('Unsupported state transition %(cur_state)s to %(next_state)s'), cur_state=cur_state_, next_state=state)
 
 		if transition:
 			if state == 'RUN':
@@ -1870,6 +1874,7 @@ def domain_save(uri, domain, statefile):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		old_state = node.domains[domain].key()
 		dom.save(statefile)
@@ -1886,6 +1891,7 @@ def domain_restore(uri, domain, statefile):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		old_state = node.domains[domain].key()
 		conn.restore(statefile)
@@ -1902,6 +1908,7 @@ def domain_undefine(uri, domain, volumes=[]):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		_domain_backup(dom)
 		if volumes is None:
@@ -1949,6 +1956,7 @@ def domain_migrate(source_uri, domain, target_uri, mode=0):
 
 		target_node = node_query(target_uri)
 		target_conn = target_node.conn
+		assert target_conn is not None
 
 		if source_conn is None:  # offline node
 			try:
@@ -2011,6 +2019,7 @@ def domain_snapshot_create(uri, domain, snapshot):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		dom_stat = node.domains[domain]
 		if dom_stat.pd.snapshots is None:
@@ -2032,6 +2041,7 @@ def domain_snapshot_revert(uri, domain, snapshot):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		dom_stat = node.domains[domain]
 		if dom_stat.pd.snapshots is None:
@@ -2064,6 +2074,7 @@ def domain_snapshot_delete(uri, domain, snapshot):
 	try:
 		node = node_query(uri)
 		conn = node.conn
+		assert conn is not None
 		dom = conn.lookupByUUIDString(domain)
 		dom_stat = node.domains[domain]
 		if dom_stat.pd.snapshots is None:
@@ -2092,6 +2103,7 @@ def domain_update(domain):
 	# 1st: find domain on the previous host using only (stale) internal data
 	for node in nodes.itervalues():
 		conn = node.conn
+		assert conn is not None
 		try:
 			dom_stat = node.domains[domain]
 			dom = conn.lookupByUUIDString(domain)
@@ -2135,6 +2147,7 @@ def domain_clone(uri, domain, name, subst):
 		try:
 			node = node_query(uri)
 			conn = node.conn
+			assert conn is not None
 			try:
 				dom = conn.lookupByName(name)
 				uuid = dom.UUIDString()
