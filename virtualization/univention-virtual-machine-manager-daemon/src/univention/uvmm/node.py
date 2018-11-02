@@ -60,7 +60,7 @@ import cPickle as pickle
 
 import univention.config_registry as ucr
 try:
-	from typing import Any, Dict, Optional, Set, Tuple, Type  # noqa
+	from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union  # noqa
 	from types import TracebackType  # noqa
 except ImportError:
 	pass
@@ -81,7 +81,7 @@ DOM_EVENT_STRINGS = (
 	("Shutdown", ("Finished", "On guest request", "On host request")),
 	("PMSuspended", ("Memory", "Disk")),
 	("Crashed", ("Panicked",)),
-)
+)  # type: Tuple[Tuple[str, Tuple[str, ...]], ...]
 CONNECTION_EVENT_STRINGS = ("Error", "End-of-file", "Keepalive", "Client")
 
 XMLNS = {
@@ -100,6 +100,7 @@ class StoragePool(object):
 	"""Container for storage pool statistics."""
 
 	def __init__(self, pool):
+		# type: (libvirt.virStoragePool) -> None
 		self.uuid = pool.UUIDString()
 		self.name = pool.name()
 		self.capacity = 0
@@ -107,9 +108,11 @@ class StoragePool(object):
 		self.update(pool)
 
 	def __eq__(self, other):
+		# type: (Any) -> bool
 		return self.uuid == other.uuid
 
 	def update(self, pool):
+		# type: (libvirt.virStoragePool) -> None
 		"""Update statistics."""
 		_state, self.capacity, _allocation, self.available = pool.info()
 
@@ -120,9 +123,10 @@ class DomainTemplate(object):
 
 	@staticmethod
 	def list_from_xml(xml):
+		# type: (str) -> List[DomainTemplate]
 		"""Convert XML to list."""
 		capabilities_tree = ET.fromstring(xml)
-		result = []
+		result = []  # type: List[DomainTemplate]
 		for guest in capabilities_tree.findall('guest'):
 			os_type = guest.findtext('os_type')
 			f_names = DomainTemplate.__get_features(guest)
@@ -134,8 +138,9 @@ class DomainTemplate(object):
 
 	@staticmethod
 	def __get_features(node):
+		# type: (ET._Element) -> List[str]
 		"""Return list of features."""
-		f_names = []
+		f_names = []  # type: List[str]
 		features = node.find('features')
 		if features is not None:
 			for child in features:
@@ -150,6 +155,7 @@ class DomainTemplate(object):
 		return f_names
 
 	def __init__(self, arch, domain_type, os_type, features):
+		# type: (ET._Element, ET._Element, str, List[str]) -> None
 		self.os_type = os_type
 		self.features = features
 		self.arch = arch.attrib['name']
@@ -173,9 +179,11 @@ class DomainTemplate(object):
 		self.loader = arch.findtext('loader')
 
 	def __str__(self):
+		# type: () -> str
 		return 'DomainTemplate(arch=%s dom_type=%s os_type=%s): %s, %s, %s, %s' % (self.arch, self.domain_type, self.os_type, self.emulator, self.loader, self.machines, self.features)
 
 	def matches(self, domain):
+		# type: (Data_Domain) -> bool
 		"""Return True if domain matches os_type, arch and domain_type."""
 		return self.arch == domain.arch and self.domain_type == domain.domain_type and self.os_type == domain.os_type
 
@@ -185,9 +193,11 @@ class PersistentCached(object):
 	"""Abstract class to implement caching."""
 
 	def cache_file_name(self, suffix='.pic'):
+		# type: (str) -> str
 		raise NotImplementedError()
 
 	def cache_save(self, data):
+		# type: (Any) -> None
 		"""Save public data to cache."""
 		new_name = self.cache_file_name(suffix='.new')
 		old_name = self.cache_file_name()
@@ -199,6 +209,7 @@ class PersistentCached(object):
 		os.rename(new_name, old_name)
 
 	def cache_purge(self):
+		# type: () -> None
 		"""Purge public data from cache."""
 		old_name = self.cache_file_name()
 		new_name = self.cache_file_name(suffix='.old')
@@ -267,11 +278,12 @@ class Domain(PersistentCached):
 	CPUTIMES = (10, 60, 5 * 60)  # 10s 60s 5m
 
 	def __init__(self, domain, node):
+		# type: (Union[libvirt.virDomain, str], Node) -> None
 		self.node = node
 		self._time_stamp = 0.0
 		self._time_used = 0L
 		self._cpu_usage = 0
-		self._cache_id = None
+		self._cache_id = None  # type: Optional[int]
 		self._restart = 0
 		self._redefined = True  # check for <cpu> only once per process as this is quiet expensive
 		self.pd = Data_Domain()
@@ -284,9 +296,11 @@ class Domain(PersistentCached):
 		self.update_ldap()
 
 	def __eq__(self, other):
+		# type: (Any) -> bool
 		return self.pd.uuid == other.pd.uuid
 
 	def update(self, domain, redefined=False):
+		# type: (libvirt.virDomain, bool) -> None
 		"""
 		Update statistics which may change often.
 
@@ -337,6 +351,7 @@ class Domain(PersistentCached):
 		self.update_expensive(domain)
 
 	def update_expensive(self, domain):
+		# type: (libvirt.virDomain) -> None
 		"""Update statistics."""
 		with _Domain(domain) as dom:
 			cache_id = hash(dom.inactive_xml)
@@ -410,6 +425,7 @@ class Domain(PersistentCached):
 		return True
 
 	def update_volumes(self, domain):
+		# type: (libvirt.virDomain) -> None
 		"""Determine size and pool."""
 		for dev in self.pd.disks:
 			if not dev.source:
@@ -425,6 +441,7 @@ class Domain(PersistentCached):
 					logger.warning('Failed to query disk %s#%s: %s', self.pd.uuid, dev.source, ex.get_error_message())
 
 	def update_snapshots(self, domain):
+		# type: (libvirt.virDomain) -> None
 		"""List of snapshots."""
 		snapshots = {}
 		for name in domain.snapshotListNames(0):
@@ -442,6 +459,7 @@ class Domain(PersistentCached):
 		self.pd.snapshots = snapshots
 
 	def update_ldap(self):
+		# type: () -> None
 		"""Update annotations from LDAP."""
 		try:
 			self.pd.annotations = ldap_annotation(self.pd.uuid)
@@ -486,6 +504,7 @@ class Domain(PersistentCached):
 		return (fmt, vals)
 
 	def xml2obj(self, xml):
+		# type: (str) -> None
 		"""Parse XML into python object."""
 		try:
 			domain_tree = ET.fromstring(xml)
@@ -508,6 +527,7 @@ class Domain(PersistentCached):
 		self.pd.targethosts = [host.text for host in domain_tree.findall('metadata/uvmm:migrationtargethosts/uvmm:hostname', namespaces=XMLNS)]
 
 	def xml2obj_boot(self, domain_tree):
+		# type: (ET._Element) -> None
 		"""Parse boot information from XML."""
 		os_ = domain_tree.find('os', namespaces=XMLNS)
 		if os_ is not None:
@@ -526,12 +546,14 @@ class Domain(PersistentCached):
 			self.pd.bootloader_args = domain_tree.findtext('bootloader_args', namespaces=XMLNS)
 
 	def xml2obj_clock(self, domain_tree):
+		# type: (ET._Element) -> None
 		"""Parse clock information from XML."""
 		clock = domain_tree.find('clock', namespaces=XMLNS)
 		if clock is not None:
 			self.pd.rtc_offset = clock.attrib.get('offset')
 
 	def xml2obj_disks(self, devices):
+		# type: (ET._Element) -> None
 		"""Parse disks from XML."""
 		self.pd.disks = []
 		for disk in devices.findall('disk', namespaces=XMLNS):
@@ -565,6 +587,7 @@ class Domain(PersistentCached):
 			self.pd.disks.append(dev)
 
 	def xml2obj_interfaces(self, devices):
+		# type: (ET._Element) -> None
 		"""Parse interfaces from XML."""
 		self.pd.interfaces = []
 		for iface in devices.findall('interface', namespaces=XMLNS):
@@ -594,6 +617,7 @@ class Domain(PersistentCached):
 			self.pd.interfaces.append(dev)
 
 	def xml2obj_graphics(self, devices):
+		# type: (ET._Element) -> None
 		"""Parse graphics from XML."""
 		self.pd.graphics = []
 		for graphic in devices.findall('graphics', namespaces=XMLNS):
@@ -622,16 +646,19 @@ class Domain(PersistentCached):
 			self.pd.graphics.append(dev)
 
 	def key(self):
+		# type: () -> int
 		"""Return a unique key for this domain and generation."""
 		return hash((self.pd.uuid, self._time_stamp))
 
 	def cache_file_name(self, uuid=None, suffix='.xml'):
+		# type: (str, str) -> str
 		"""Return the path of the domain cache file."""
 		if uuid is None:
 			uuid = self.pd.uuid
 		return os.path.join(self.node.cache_dom_dir(), uuid + suffix)
 
 	def calc_cache_id(self):
+		# type: () -> int
 		key = hash((self.pd.uuid, self.pd.name, self.pd.maxMem))
 		for disk in self.pd.disks:
 			key ^= hash((disk.target_dev, disk.source))
@@ -642,6 +669,7 @@ class Domain(PersistentCached):
 		return key
 
 	def _vnc(self):
+		# type: () -> Optional[Tuple[str, int]]
 		"""
 		Return (host, port) tuple for VNC connection, or None.
 		"""
@@ -667,6 +695,7 @@ class _DomainDict(dict):
 	"""Dictionary for handling domains of a node and their persistent cache."""
 
 	def __delitem__(self, uuid):
+		# type: (str) -> None
 		"""x.__delitem__(i) <==> del x[i]"""
 		domStat = super(_DomainDict, self).pop(uuid)
 		try:
@@ -681,13 +710,14 @@ class Node(PersistentCached):
 	"""Container for node statistics."""
 
 	def __init__(self, uri, cache_dir=None):
+		# type: (str, str) -> None
 		self.cache_dir = cache_dir
 		self.domains = _DomainDict()
-		self.conn = None
+		self.conn = None  # type: Optional[libvirt.virConnect]
 		self.libvirt_version = tuple2version((0, 8, 7))
 		self.config_frequency = Nodes.IDLE_FREQUENCY
 		self.current_frequency = Nodes.IDLE_FREQUENCY
-		self.domainCB = []
+		self.domainCB = []  # type: List[int]
 		self.timerEvent = threading.Event()
 		try:
 			# Calculate base cache dir for node
@@ -703,7 +733,7 @@ class Node(PersistentCached):
 			with open(cache_file_name, 'r') as cache_file:
 				data = pickle.Unpickler(cache_file)
 				assert data is not None
-				self.pd = data.load()
+				self.pd = data.load()  # type: Data_Node
 			assert self.pd.uri == uri
 			logger.debug("Loaded from cache '%s'", self.pd.uri)
 
@@ -733,10 +763,11 @@ class Node(PersistentCached):
 		self._cache_id = self.calc_cache_id()
 
 		# schedule periodic update
-		self.timer = threading.Thread(group=None, target=self.run, name=self.pd.uri, args=(), kwargs={})
+		self.timer = threading.Thread(group=None, target=self.run, name=self.pd.uri, args=(), kwargs={})  # type: Optional[threading.Thread]
 		self.timer.start()
 
 	def run(self):
+		# type: () -> None
 		"""Handle regular poll. Also checks connection liveness."""
 		logger.info("timer_callback(%s) start", self.pd.uri)
 		try:
@@ -753,6 +784,7 @@ class Node(PersistentCached):
 			logger.debug("timer_callback(%s) terminated", self.pd.uri)
 
 	def update_autoreconnect(self):
+		# type: () -> None
 		"""(Re-)connect after connection broke."""
 		try:
 			if self.conn is None:
@@ -776,17 +808,21 @@ class Node(PersistentCached):
 			self._unregister()
 
 	def __eq__(self, other):
+		# type: (Any) -> bool
 		return (self.pd.uri, self.pd.name) == (other.pd.uri, other.pd.name)
 
 	def __del__(self):
+		# type: () -> None
 		"""Free Node and deregister callbacks."""
 		self.unregister()
 		del self.pd
 		del self.domains
 
 	def _register_default_pool(self):
+		# type: () -> None
 		"""Create a default storage pool if not available"""
 		try:
+			assert self.conn is not None
 			self.conn.storagePoolLookupByName('default')
 			logger.debug("default pool already registered on %s" % self.pd.name)
 		except libvirt.libvirtError:
@@ -797,6 +833,7 @@ class Node(PersistentCached):
 			)
 
 	def update_once(self):
+		# type: () -> None
 		"""Update once on (re-)connect."""
 		self.pd.name = self.conn.getHostname()
 		info = self.conn.getInfo()
@@ -816,6 +853,7 @@ class Node(PersistentCached):
 		]
 
 	def livecycle_event(self, conn, dom, event, detail, opaque):
+		# type: (libvirt.virConnect, libvirt.virDomain, int, int, Any) -> None
 		"""Handle domain addition, update and removal."""
 		log = logger.getChild('livecycle')
 		try:
@@ -853,6 +891,7 @@ class Node(PersistentCached):
 			# don't crash the event handler
 
 	def reboot_event(self, conn, dom, opaque):
+		# type: (libvirt.virConnect, libvirt.virDomain, Any) -> None
 		"""Handle domain reboot."""
 		log = logger.getChild('reboot')
 		try:
@@ -882,6 +921,7 @@ class Node(PersistentCached):
 			# don't crash the event handler
 
 	def migration_event(self, conn, dom, iteration, opaque):
+		# type: (libvirt.virConnect, libvirt.virDomain, int, Any) -> None
 		"""
 		Handle domain migration events.
 		"""
@@ -910,6 +950,7 @@ class Node(PersistentCached):
 			# don't crash the event handler
 
 	def job_event(self, conn, dom, stats, opaque):
+		# type: (libvirt.virConnect, libvirt.virDomain, Dict[str, Any], Any) -> None
 		"""
 		Handle domain job completed events.
 		"""
@@ -932,6 +973,7 @@ class Node(PersistentCached):
 			# don't crash the event handler
 
 	def error_event(self, conn, dom, srcpath, devalias, action, reason, opaque):
+		# type: (libvirt.virConnect, libvirt.virDomain, str, str, int, str, Any) -> None
 		"""
 		Handle IO errors.
 		"""
@@ -957,6 +999,7 @@ class Node(PersistentCached):
 			# don't crash the event handler
 
 	def close_event(self, conn, reason, opaque):
+		# type: (libvirt.virConnect, int, Any) -> None
 		"""
 		Handle connection close event.
 
@@ -973,6 +1016,7 @@ class Node(PersistentCached):
 		self.conn = None
 
 	def unregister(self, wait=False):
+		# type: (bool) -> None
 		"""Unregister callbacks doing updates."""
 		if self.timer is not None:
 			timer = self.timer
@@ -988,6 +1032,7 @@ class Node(PersistentCached):
 		self._unregister()
 
 	def _unregister(self):
+		# type: () -> None
 		"""Unregister callback and close connection."""
 		if self.conn is not None:
 			while self.domainCB:
@@ -1003,12 +1048,14 @@ class Node(PersistentCached):
 			self.conn = None
 
 	def set_frequency(self, hz):
+		# type: (int) -> None
 		"""Set polling frequency for update."""
 		self.config_frequency = hz
 		self.current_frequency = hz
 		self.timerEvent.set()
 
 	def update(self):
+		# type: () -> None
 		"""Update node statistics."""
 		curMem = 0
 		maxMem = 0
@@ -1055,6 +1102,7 @@ class Node(PersistentCached):
 			self.write_novnc_tokens()
 
 	def write_novnc_tokens(self):
+		# type: () -> None
 		token_dir = os.path.join(self.cache_dir, 'novnc.tokens')
 		path = os.path.join(token_dir, uri_encode(self.pd.uri))
 		logger.debug("Writing noVNC tokens to '%s'", path)
@@ -1068,6 +1116,7 @@ class Node(PersistentCached):
 		os.rename(tmp_file.name, path)
 
 	def wait_update(self, domain, state_key, timeout=10):
+		# type: (str, int, int) -> None
 		"""Wait until domain gets updated."""
 		while timeout > 0:
 			try:
@@ -1081,6 +1130,7 @@ class Node(PersistentCached):
 			logger.warning('Timeout waiting for update.')
 
 	def calc_cache_id(self):
+		# type: () -> int
 		"""Calculate key for disk cache."""
 		key = hash((
 			self.pd.phyMem,
@@ -1091,12 +1141,14 @@ class Node(PersistentCached):
 		return key
 
 	def cache_file_name(self, uri=None, suffix='.pic'):
+		# type: (str, str) -> str
 		"""Return the path of the node cache file."""
 		if uri is None:
 			uri = self.pd.uri
 		return os.path.join(self.cache_dir, uri_encode(uri) + suffix)
 
 	def domain_list(self, pattern='*'):
+		# type: (str) -> List[Dict[str, Any]]
 		regex = re.compile(fnmatch.translate(pattern), re.IGNORECASE)
 		domains = []
 		for dom in self.domains:
@@ -1124,6 +1176,7 @@ class Node(PersistentCached):
 		return domains
 
 	def cache_dom_dir(self, uri=None):
+		# type: (str) -> str
 		"""Return the path of the domain cache directory of the node."""
 		return self.cache_file_name(uri, suffix='.d')
 
@@ -1136,24 +1189,29 @@ class Nodes(dict):
 	BEBO_FREQUENCY = 5 * 60 * 1000  # ms
 
 	def __init__(self):
+		# type: () -> None
 		super(Nodes, self).__init__()
 		self.cache_dir = None
 
 	def __delitem__(self, uri):
+		# type: (str) -> None
 		"""x.__delitem__(i) <==> del x[i]"""
 		self[uri].unregister()
 		super(Nodes, self).__delitem__(uri)
 
 	def set_frequency(self, hz):
+		# type: (int) -> None
 		"""Set polling frequency for update."""
 		for node in self.values():
 			node.set_frequency(hz)
 
 	def set_cache(self, cache):
+		# type: (str) -> None
 		"""Register a cache."""
 		self.cache_dir = cache
 
 	def add(self, uri):
+		# type: (str) -> None
 		"""Add node to watch list."""
 		if uri in self:
 			raise NodeError(_('Hypervisor "%(uri)s" is already connected.'), uri=uri)
@@ -1164,6 +1222,7 @@ class Nodes(dict):
 		logger.debug("Hypervisor '%s' added.", uri)
 
 	def remove(self, uri):
+		# type: (str) -> None
 		"""Remove node from watch list."""
 		try:
 			del self[uri]
@@ -1172,6 +1231,7 @@ class Nodes(dict):
 		logger.debug("Hypervisor '%s' removed.", uri)
 
 	def query(self, uri):
+		# type: (str) -> Node
 		"""Get domain data from node."""
 		try:
 			node = self[uri]
@@ -1180,6 +1240,7 @@ class Nodes(dict):
 			raise NodeError(_('Hypervisor "%(uri)s" is not connected.'), uri=uri)
 
 	def frequency(self, hz=IDLE_FREQUENCY, uri=None):
+		# type: (int, str) -> None
 		"""Set frequency for polling nodes."""
 		if uri is None:
 			self.set_frequency(hz)
@@ -1188,6 +1249,7 @@ class Nodes(dict):
 			node.set_frequency(hz)
 
 	def list(self, group, pattern):
+		# type: (Optional[str], str) -> List[Node]
 		"""Return list of watched nodes matching the given pattern."""
 		nodes = []
 		if group == 'default' or group is None:  # FIXME
@@ -1207,6 +1269,7 @@ node_list = nodes.list
 
 
 def group_list():
+	# type: () -> List[str]
 	"""Return list of groups for nodes."""
 	group = []
 	if len(node_list('default', '*')) > 0:
@@ -1218,6 +1281,7 @@ def group_list():
 
 
 def _domain_backup(dom, save=True):
+	# type: (libvirt.virDomain, bool) -> None
 	"""Save domain definition to backup file."""
 	backup_dir = configRegistry.get('uvmm/backup/directory', '/var/backups/univention-virtual-machine-manager-daemon')
 	if not backup_dir:
@@ -1254,6 +1318,7 @@ def _domain_backup(dom, save=True):
 
 
 def _update_xml(_node_parent, _node_name, _node_value, _changes=set(), **attr):
+	# type: (ET._Element, str, Optional[str], Set[Optional[str]], **Any) -> ET._Element
 	"""Create, update or delete node named '_node_name' of '_node_parent'.
 	If _node_value == None and all(attr == None), then node is deleted.
 	"""
@@ -1284,6 +1349,7 @@ def _update_xml(_node_parent, _node_name, _node_value, _changes=set(), **attr):
 
 
 def _domain_edit(node, dom_stat, xml):
+	# type: (Node, Data_Domain, Optional[str]) -> Tuple[str, List[str]]
 	"""
 	Apply python object 'dom_stat' to an XML domain description.
 
@@ -1402,7 +1468,7 @@ def _domain_edit(node, dom_stat, xml):
 		domain_devices.remove(domain_devices_disk)
 	for disk in dom_stat.disks:
 		logger.debug('DISK: %s' % disk)
-		changes = set()
+		changes = set()  # type: Set[Optional[str]]
 		# /domain/devices/disk @type @device
 		try:
 			key = (disk.target_bus, disk.target_dev)
@@ -1544,6 +1610,7 @@ def _domain_edit(node, dom_stat, xml):
 
 
 def domain_define(uri, domain):
+	# type: (str, Data_Domain) -> Tuple[str, List[str]]
 	"""Convert python object to an XML document."""
 	node = node_query(uri)
 	conn = node.conn
@@ -1676,6 +1743,7 @@ def domain_define(uri, domain):
 
 
 def domain_list(uri, pattern='*'):
+	# type: (str, str) -> Dict[str, List[Dict[str, Any]]]
 	"""Returns a dictionary of domains matching the pattern in name, contact or description.
 
 	return: { 'nodeY' : [ ( <uuid>, <domain name> ), ... ], ... }
@@ -1695,6 +1763,7 @@ def domain_list(uri, pattern='*'):
 
 
 def domain_info(uri, domain):
+	# type: (str, str) -> Dict[str, Any]
 	"""Return detailed information of a domain."""
 	node = node_query(uri)
 	# transfer state number into string constant
@@ -1708,6 +1777,7 @@ def domain_info(uri, domain):
 
 
 def domain_state(uri, domain, state):
+	# type: (str, str, str) -> None
 	"""Change running state of domain on node and wait for updated state."""
 	try:
 		node = node_query(uri)
@@ -1795,6 +1865,7 @@ def domain_state(uri, domain, state):
 
 
 def domain_save(uri, domain, statefile):
+	# type: (str, str, str) -> None
 	"""Save defined domain."""
 	try:
 		node = node_query(uri)
@@ -1810,6 +1881,7 @@ def domain_save(uri, domain, statefile):
 
 
 def domain_restore(uri, domain, statefile):
+	# type: (str, str, str) -> None
 	"""Restore defined domain."""
 	try:
 		node = node_query(uri)
@@ -1825,6 +1897,7 @@ def domain_restore(uri, domain, statefile):
 
 
 def domain_undefine(uri, domain, volumes=[]):
+	# type: (str, str, List[str]) -> None
 	"""Undefine a domain and its volumes on a node."""
 	try:
 		node = node_query(uri)
@@ -1933,6 +2006,7 @@ def domain_migrate(source_uri, domain, target_uri, mode=0):
 
 
 def domain_snapshot_create(uri, domain, snapshot):
+	# type: (str, str, str) -> None
 	"""Create new snapshot of domain."""
 	try:
 		node = node_query(uri)
@@ -1953,6 +2027,7 @@ def domain_snapshot_create(uri, domain, snapshot):
 
 
 def domain_snapshot_revert(uri, domain, snapshot):
+	# type: (str, str, str) -> None
 	"""Revert to snapshot of domain."""
 	try:
 		node = node_query(uri)
@@ -1984,6 +2059,7 @@ def domain_snapshot_revert(uri, domain, snapshot):
 
 
 def domain_snapshot_delete(uri, domain, snapshot):
+	# type: (str, str, str) -> None
 	"""Delete snapshot of domain."""
 	try:
 		node = node_query(uri)
@@ -2009,6 +2085,7 @@ def domain_snapshot_delete(uri, domain, snapshot):
 
 
 def domain_update(domain):
+	# type: (str) -> None
 	"""Trigger update of domain.
 	Unfound domains are ignored."""
 	global nodes
@@ -2050,6 +2127,7 @@ def domain_update(domain):
 
 
 def domain_clone(uri, domain, name, subst):
+	# type: (str, str, str, Any) -> Tuple[str, List[str]]
 	"""Clone a domain."""
 	warnings = []
 	undo_vol = []
@@ -2252,6 +2330,7 @@ def domain_clone(uri, domain, name, subst):
 
 
 def __domain_targethost(uri, domain):
+	# type (str, str) -> None
 	"""Modify migration target host"""
 	try:
 		node = node_query(uri)
@@ -2282,12 +2361,14 @@ def __domain_targethost(uri, domain):
 
 
 def domain_targethost_add(uri, domain, targethost):
+	# type (str, str, str) -> None
 	"""Add a migration target host"""
 	for hosts in __domain_targethost(uri, domain):
 		hosts.add(targethost)
 
 
 def domain_targethost_remove(uri, domain, targethost):
+	# type (str, str, str) -> None
 	"""Remove a migration target host"""
 	for hosts in __domain_targethost(uri, domain):
 		hosts.discard(targethost)
