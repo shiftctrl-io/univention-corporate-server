@@ -1158,6 +1158,10 @@ define([
 				region: 'main'
 			});
 
+			this._tabs.watch('selectChildWidget', function(name, old, new_) {
+				domClass.toggle(new_.domNode, 'foo', new_.domNode.scrollHeight > new_.domNode.clientHeight);
+			});
+
 			// prepare widgets and layout
 			properties = this._prepareWidgets(properties);
 			layout = this._prepareAdvancedSettings(layout);
