@@ -35,6 +35,14 @@ username = users[-1].props.username
 user = client.users_user.get(id=username).result()
 print('Unixhome of user {!r} is {!r}.'.format(user.props.username, user.props.unixhome))
 
+# GET with fields mask
+# -H "accept: application/json" -H "X-Fields: props{username, groups},position"
+fields_mask = 'uri, position, props{username, groups}'
+user = client.users_user.get(id=username, _request_options={'headers': {'X-Fields': fields_mask}}).result()
+print('User resource with fields mask {!r} should have emtpy "options" property...'.format(fields_mask))
+assert user.options is None
+print('OK.')
+
 # CREATE
 hpa = [
 	{'street': random_str(), 'zipcode': random_str(), 'city': random_str()},

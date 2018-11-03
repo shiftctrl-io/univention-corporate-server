@@ -1,26 +1,27 @@
 from __future__ import absolute_import, unicode_literals
+
 import logging
 from ldap.filter import filter_format
 from flask import Blueprint, Flask, g, request
 from flask_httpauth import HTTPBasicAuth
 from flask_restplus import Api, Namespace, Resource, abort, reqparse
-
 from werkzeug.contrib.fixers import ProxyFix
-from univention.config_registry import ConfigRegistry
-from ..exceptions import UdmError
-from .models import get_model, get_module
-from ..udm import UDM
 from univention.admin.uexceptions import authFail
+
+from ..udm import UDM
+from ..exceptions import UdmError
+from ..encoders import _classify_name
+from ..helpers import get_all_udm_module_names
+from .utils import setup_logging, ucr
+from .resource_model import get_model, get_udm_module, NoSuperordinate
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
-	from univention.udm.base import BaseObjectTV
+	from ..base import BaseObjectTV
+	from flask_restplus import Model
 except ImportError:
 	pass
 
-
-ucr = ConfigRegistry()
-ucr.load()
 
 UDM_API_VERSION = 1
 HTTP_API_VERSION = '{}.0'.format(UDM_API_VERSION)
@@ -32,6 +33,8 @@ authorizations = {
 auth = HTTPBasicAuth()
 
 app = Flask(__name__)
+setup_logging(app)
+logger = logging.getLogger(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 blueprint = Blueprint('api', __name__, url_prefix='/udm')
 api = Api(
@@ -42,38 +45,11 @@ api = Api(
 	authorizations=authorizations,
 	security='basic',
 )
-_udm_object_type = 'users/user'
-ns_users_user = Namespace(
-	_udm_object_type.replace('/', '-'),
-	description='{} related operations'.format(_udm_object_type)
-)
-api_model_users_user = ns_users_user.model(
-	_udm_object_type.replace('/', '-'),
-	get_model(module_name=_udm_object_type, udm_api_version=UDM_API_VERSION, api=ns_users_user)
-)
-api.add_namespace(ns_users_user, path='/{}'.format(_udm_object_type))
 app.register_blueprint(blueprint)
 
-LOG_MESSAGE_FORMAT ='%(asctime)s %(levelname)-7s %(module)s.%(funcName)s:%(lineno)d  %(message)s'
-LOG_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-flask_rp_logger = logging.getLogger('flask_restplus')
-gunicorn_logger = logging.getLogger('gunicorn')
-udm_logger = logging.getLogger('univention')
-for handler in app.logger.handlers:
-	handler.setLevel(logging.DEBUG)
-	handler.setFormatter(logging.Formatter(LOG_MESSAGE_FORMAT, LOG_DATETIME_FORMAT))
-	flask_rp_logger.addHandler(handler)
-	gunicorn_logger.addHandler(handler)
-	udm_logger.addHandler(handler)
-app.logger.setLevel(logging.DEBUG)
-flask_rp_logger.setLevel(logging.DEBUG)
-gunicorn_logger.setLevel(logging.DEBUG)
-udm_logger.setLevel(logging.DEBUG)
-logger = app.logger
 
-
-def search_single_object(module_name, id):  # type: (Text, Text) -> BaseObject
-	mod = get_module(module_name=module_name, udm_api_version=UDM_API_VERSION)
+def search_single_object(module_name, id):  # type: (Text, Text) -> BaseObjectTV
+	mod = get_udm_module(module_name=module_name, udm_api_version=UDM_API_VERSION)
 	identifying_property = mod.meta.identifying_property
 	filter_s = filter_format('%s=%s', (identifying_property, id))
 	res = list(mod.search(filter_s))
@@ -88,19 +64,8 @@ def search_single_object(module_name, id):  # type: (Text, Text) -> BaseObject
 		abort(500)
 
 
-def obj2dict(obj):  # type: (BaseObject) -> Dict[Text, Any]
-	identifying_property = obj._udm_module.meta.identifying_property
-	return {
-		'id': getattr(obj.props, identifying_property),
-		'dn': obj.dn,
-		'options': obj.options,
-		'policies': obj.policies,
-		'position': obj.position,
-		'props': obj.props,
-	}
-
-
 def docstring_params(*args, **kwargs):
+	"""Decorator that formats docstrings."""
 	def dec_func(obj):
 		obj.__doc__ = obj.__doc__.format(*args, **kwargs)
 		return obj
@@ -108,7 +73,7 @@ def docstring_params(*args, **kwargs):
 
 
 @auth.verify_password
-def verify_pw(username, password):
+def verify_pw(username, password):  # type: (Text, Text) -> bool
 	logger.debug('*** username=%r password=%r', username, password)
 	if g.get('udm'):
 		logger.error('Already set: g.udm=%r', g.udm)
@@ -122,120 +87,156 @@ def verify_pw(username, password):
 		return False
 
 
-@ns_users_user.route('/')
-class UsersUserList(Resource):
-	_udm_object_type = 'users/user'
-	method_decorators = (auth.login_required,)
+def create_resource(module_name, namespace, api_model):  # type: (Text, Namespace, Model) -> Tuple[Any, Any]
 
-	@ns_users_user.doc('list')
-	@ns_users_user.marshal_list_with(api_model_users_user, skip_none=True)
-	@docstring_params(_udm_object_type.split('/')[-1])
-	def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
-		"""List all {} objects."""
-		res = [obj2dict(obj) for obj in get_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION).search()]
-		if not res:
-			msg = 'No {!r} objects exist.'.format(self._udm_object_type)
-			logger.error('404: %s', msg)
-			abort(404, msg)
-		return res, 200
+	@namespace.route('/')
+	@namespace.doc('{}ResourceList'.format(_classify_name(module_name)))
+	class UdmResourceList(Resource):
+		_udm_object_type = module_name
+		method_decorators = (auth.login_required,)
 
-	@ns_users_user.doc('create')
-	@ns_users_user.expect(api_model_users_user)
-	@ns_users_user.marshal_with(api_model_users_user, skip_none=True, code=201)
-	@docstring_params(_udm_object_type.split('/')[-1])
-	def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
-		"""Create a new {} object."""
-		mod = get_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION)
-		identifying_property = mod.meta.identifying_property
-		parser = reqparse.RequestParser()
-		parser.add_argument('id', type=str, required=True, help='ID ({}) of object [required].'.format(identifying_property))
-		parser.add_argument('options', type=list, help='Options of object [optional].')
-		parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
-		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
-		parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
-		args = parser.parse_args()
-		obj = mod.new()  # type: BaseObjectTV
-		obj.options = args.get('options') or []
-		obj.policies = args.get('policies') or []
-		obj.position = args.get('position') or mod._get_default_object_positions()[0]
-		for k, v in args['props'].items():
-			setattr(obj.props, k, v)
-		setattr(obj.props, mod.meta.identifying_property, args.get('id'))
-		logger.info('Creating {!r}...'.format(obj))
-		try:
-			obj.save().reload()
-		except UdmError as exc:
-			logger.error('400: %s', exc)
-			abort(400, str(exc))
-		return obj2dict(obj), 201
+		@namespace.doc('list')
+		@namespace.marshal_list_with(api_model, skip_none=True)
+		@docstring_params(_udm_object_type.split('/')[-1])
+		def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
+			"""List all {} objects."""
+			logger.debug('UdmResourceList.get() self._udm_object_type=%r', self._udm_object_type)
+			res = list(get_udm_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION).search())
+			if not res:
+				msg = 'No {!r} objects exist.'.format(self._udm_object_type)
+				logger.error('404: %s', msg)
+				abort(404, msg)
+			return res, 200
 
-
-@ns_users_user.route('/<string:id>')
-@ns_users_user.response(404, 'User not found')
-@ns_users_user.param('id', 'The objects ID (username, group name etc).')
-class UsersUser(Resource):
-	_udm_object_type = 'users/user'
-	method_decorators = (auth.login_required,)
-
-	@ns_users_user.doc('get')
-	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
-	@docstring_params(_udm_object_type.split('/')[-1])
-	def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-		"""Fetch a {} object given its username."""
-		if not request.authorization:
-			logger.error('Unauthorized access!')
-			abort(401)
-		logger.debug('*** g.get(udm)=%r', g.get('udm'))
-		assert g.get('udm') is not None
-		logger.debug('*** username=%r password=%r', request.authorization.username, request.authorization.password)
-		obj = search_single_object(self._udm_object_type, id)
-		return obj2dict(obj), 200
-
-	@ns_users_user.doc('delete')
-	@ns_users_user.response(204, 'User deleted')
-	@docstring_params(_udm_object_type.split('/')[-1])
-	def delete(self, id):  # type: (Text) -> Tuple[Text, int]
-		"""Delete a {} object given its username."""
-		obj = search_single_object(self._udm_object_type, id)
-		logger.info('Deleting {!r}...'.format(obj))
-		obj.delete()
-		return '', 204
-
-	@ns_users_user.doc('modify')
-	@ns_users_user.expect(api_model_users_user)
-	@ns_users_user.marshal_with(api_model_users_user, skip_none=True)
-	@docstring_params(_udm_object_type.split('/')[-1])
-	def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-		"""Update a {} object given its username."""
-		obj = search_single_object(self._udm_object_type, id)
-		parser = reqparse.RequestParser()
-		parser.add_argument('options', type=list, help='Options of object [optional].')
-		parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
-		parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
-		parser.add_argument('props', type=dict, help='Properties of object [optional].')
-		args = parser.parse_args()
-		logger.info('Updating {!r}...'.format(obj))
-		changed = False
-		for udm_attr in ('options', 'policies', 'position'):
-			if args.get(udm_attr) is not None:
-				setattr(obj, udm_attr, args[udm_attr])
-				changed = True
-		for prop, value in (args.get('props') or {}).iteritems():
-			if getattr(obj.props, prop) == '' and value is None:
-				# Ignore values we set to None earlier (instead of ''), so they
-				# wouldn't be shown in the API.
-				continue
-			if getattr(obj.props, prop) != value:
-				setattr(obj.props, prop, value)
-				changed = True
-		if changed:
+		@namespace.doc('create')
+		@namespace.expect(api_model)
+		@namespace.marshal_with(api_model, skip_none=True, code=201)
+		@docstring_params(_udm_object_type.split('/')[-1])
+		def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
+			"""Create a new {} object."""
+			logger.debug('UdmResourceList.post() self._udm_object_type=%r', self._udm_object_type)
+			mod = get_udm_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION)
+			identifying_property = mod.meta.identifying_property
+			parser = reqparse.RequestParser()
+			parser.add_argument('id', type=str, required=True, help='ID ({}) of object [required].'.format(identifying_property))
+			parser.add_argument('options', type=list, help='Options of object [optional].')
+			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
+			parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
+			parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
+			args = parser.parse_args()
+			obj = mod.new()  # type: BaseObjectTV
+			obj.options = args.get('options') or []
+			obj.policies = args.get('policies') or []
+			obj.position = args.get('position') or mod._get_default_object_positions()[0]
+			for k, v in args['props'].items():
+				setattr(obj.props, k, v)
+			setattr(obj.props, mod.meta.identifying_property, args.get('id'))
+			logger.info('Creating {!r}...'.format(obj))
 			try:
 				obj.save().reload()
 			except UdmError as exc:
 				logger.error('400: %s', exc)
 				abort(400, str(exc))
-		return obj2dict(obj), 200
+			return obj, 201
+
+	@namespace.route('/<string:id>')
+	@namespace.doc('{}Resource'.format(_classify_name(module_name)))
+	@namespace.response(404, 'Object not found')
+	@namespace.param('id', 'The objects ID (username, group name etc).')
+	class UdmResource(Resource):
+		_udm_object_type = module_name
+		method_decorators = (auth.login_required,)
+
+		@namespace.doc('get')
+		@namespace.marshal_with(api_model, skip_none=True)
+		@docstring_params(_udm_object_type.split('/')[-1])
+		def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
+			"""Fetch a {} object given its name."""
+			logger.debug('UdmResourceList.get() id=%r self._udm_object_type=%r', id, self._udm_object_type)
+			if not request.authorization:
+				logger.error('Unauthorized access!')
+				abort(401)
+			logger.debug('*** g.get(udm)=%r', g.get('udm'))
+			assert g.get('udm') is not None
+			logger.debug('*** username=%r password=%r', request.authorization.username, request.authorization.password)
+			obj = search_single_object(self._udm_object_type, id)
+			return obj, 200
+
+		@namespace.doc('delete')
+		@namespace.response(204, 'Object deleted')
+		@docstring_params(_udm_object_type.split('/')[-1])
+		def delete(self, id):  # type: (Text) -> Tuple[Text, int]
+			"""Delete a {} object given its name."""
+			logger.debug('UdmResourceList.delete() id=%r self._udm_object_type=%r', id, self._udm_object_type)
+			obj = search_single_object(self._udm_object_type, id)
+			logger.info('Deleting {!r}...'.format(obj))
+			obj.delete()
+			return '', 204
+
+		@namespace.doc('modify')
+		@namespace.expect(api_model)
+		@namespace.marshal_with(api_model, skip_none=True)
+		@docstring_params(_udm_object_type.split('/')[-1])
+		def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
+			"""Update a {} object given its name."""
+			logger.debug('UdmResourceList.put() id=%r self._udm_object_type=%r', id, self._udm_object_type)
+			obj = search_single_object(self._udm_object_type, id)
+			parser = reqparse.RequestParser()
+			parser.add_argument('options', type=list, help='Options of object [optional].')
+			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
+			parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
+			parser.add_argument('props', type=dict, help='Properties of object [optional].')
+			args = parser.parse_args()
+			logger.info('Updating {!r}...'.format(obj))
+			changed = False
+			for udm_attr in ('options', 'policies', 'position'):
+				if args.get(udm_attr) is not None:
+					setattr(obj, udm_attr, args[udm_attr])
+					changed = True
+			for prop, value in (args.get('props') or {}).iteritems():
+				if getattr(obj.props, prop) == '' and value is None:
+					# Ignore values we set to None earlier (instead of ''), so they
+					# wouldn't be shown in the API.
+					continue
+				if getattr(obj.props, prop) != value:
+					setattr(obj.props, prop, value)
+					changed = True
+			if changed:
+				try:
+					obj.save().reload()
+				except UdmError as exc:
+					logger.error('400: %s', exc)
+					abort(400, str(exc))
+			return obj, 200
+
+	return UdmResourceList, UdmResource
+
+
+incomplete_modules = (
+	'dhcp/dhcp', 'dns/dns', 'mail/mail', 'oxmail/oxmail', 'policies/policy', 'settings/portal_all', 'settings/settings',
+	'shares/print', 'users/passwd', 'users/self',
+)
+logger.info('Skipping UDM modules without mapping: %r.', incomplete_modules)
+
+for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomplete_modules]:
+	# if not any(udm_object_type.startswith(x) for x in ('nagios', 'policies', 'computer', 'user', 'group', 'saml')):
+	# 	logger.info('*** Skipping %r...', udm_object_type)
+	# 	continue
+	ns = Namespace(
+		udm_object_type.replace('/', '-'),
+		description='{} related operations'.format(udm_object_type)
+	)
+	try:
+		model = get_model(module_name=udm_object_type, udm_api_version=UDM_API_VERSION, api=ns)
+	except NoSuperordinate as exc:
+		logger.warn(exc)
+		continue
+	ns_model = ns.model(udm_object_type.replace('/', '-'), model)
+	api.add_namespace(ns, path='/{}'.format(udm_object_type))
+	create_resource(udm_object_type, ns, ns_model)
 
 
 if __name__ == '__main__':
+	import logging
+	logger.addHandler(logging.StreamHandler())
 	app.run(debug=True, host='0.0.0.0', port=int(ucr.get('directory/manager/http_api/wsgi_server/port', 8999)))

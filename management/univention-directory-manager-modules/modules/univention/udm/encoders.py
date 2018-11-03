@@ -151,6 +151,7 @@ class HomePostalAddressPropertyEncoder(BaseEncoder):
 
 class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
 	static = True
+	type_hint = 'raw'
 
 	@staticmethod
 	def decode(value=None):
@@ -169,6 +170,7 @@ class ListOfListOflTextToDictPropertyEncoder(BaseEncoder):
 
 class MultiLanguageTextAppcenterPropertyEncoder(BaseEncoder):
 	static = True
+	type_hint = 'raw'
 
 	@staticmethod
 	def decode(value=None):
@@ -323,11 +325,11 @@ class DnListPropertyEncoder(BaseEncoder):
 	"""
 	static = False
 	udm_module_name = ''
+	type_hint = 'ObjList', 'obj'
 
 	class DnsList(list):
 		# a list with an additional member variable
 		objs = None
-		type_hint = list, str
 
 		def __deepcopy__(self, memodict=None):
 			return list(self)
@@ -391,6 +393,7 @@ class CnameListPropertyEncoder(DnListPropertyEncoder):
 	objects the CNAMEs refer to, when accessed.
 	"""
 	udm_module_name = 'dns/alias'
+	type_hint = None  # TODO: support .objs
 
 	def _list_of_dns_to_list_of_udm_objects(self, value):
 		udm_module = self.udm.get(self.udm_module_name)
@@ -405,6 +408,7 @@ class DnsEntryZoneAliasListPropertyEncoder(DnListPropertyEncoder):
 	accessed.
 	"""
 	udm_module_name = 'dns/alias'
+	type_hint = None  # TODO: support .objs
 
 	def _list_of_dns_to_list_of_udm_objects(self, value):
 		udm_module = self.udm.get(self.udm_module_name)
@@ -419,6 +423,7 @@ class DnsEntryZoneForwardListMultiplePropertyEncoder(DnListPropertyEncoder):
 	accessed.
 	"""
 	udm_module_name = 'dns/forward_zone'
+	type_hint = None  # TODO: support .objs
 
 	@staticmethod
 	def _itemgetter(value):
@@ -437,6 +442,7 @@ class DnsEntryZoneForwardListSinglePropertyEncoder(DnsEntryZoneForwardListMultip
 	accessed.
 	"""
 	udm_module_name = 'dns/forward_zone'
+	type_hint = None  # TODO: support .objs
 
 	@staticmethod
 	def _itemgetter(value):
@@ -451,6 +457,7 @@ class DnsEntryZoneReverseListMultiplePropertyEncoder(DnsEntryZoneForwardListMult
 	accessed.
 	"""
 	udm_module_name = 'dns/reverse_zone'
+	type_hint = None  # TODO: support .objs
 
 	@staticmethod
 	def _itemgetter(value):
@@ -465,6 +472,7 @@ class DnsEntryZoneReverseListSinglePropertyEncoder(DnsEntryZoneReverseListMultip
 	accessed.
 	"""
 	udm_module_name = 'dns/reverse_zone'
+	type_hint = None  # TODO: support .objs
 
 	@staticmethod
 	def _itemgetter(value):
