@@ -490,6 +490,7 @@ class DnPropertyEncoder(BaseEncoder):
 	"""
 	static = False
 	udm_module_name = ''
+	type_hint = 'obj'
 
 	class DnStr(str):
 		# a string with an additional member variable
