@@ -184,7 +184,7 @@ define([
 
 			// this.own(on(baseWindow.doc, 'scroll', lang.hitch(this, function() {
 			this.own(on(this.domNode, 'scroll', lang.hitch(this, function() {
-				console.log('scroll');
+				console.log('scroll'); // TODO remove (test if floating button works in modules without scrollless)
 				if (!this.selected) {
 					return;
 				}
@@ -194,6 +194,7 @@ define([
 				domClass.toggle(scrollToTopFloatingButton.domNode, 'shown', showScrollToTopButton);
 				domClass.toggle(scrollToTopFloatingButtonSpacer.domNode, 'shown', showScrollToTopButton);
 			})));
+			// TODO remove
 			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function() {
 				console.log('scroll');
 			})));
