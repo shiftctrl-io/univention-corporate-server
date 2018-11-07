@@ -164,6 +164,19 @@ class UDM(object):
 		connection = LDAP_connection.get_credentials_connection(identity, password, base, server, port)
 		return cls(connection)
 
+	@classmethod
+	def http(cls):
+		"""
+		Use a HTTP connection.
+
+		UDM.http().credentials(..).version(1).get('users/user')
+
+		:return: the :py:class:`UDM_HTTP` class
+		:rtype: type
+		"""
+		from .udm_http import UDM_HTTP
+		return UDM_HTTP
+
 	def version(self, api_version):
 		"""
 		Set the version of the API that the UDM modules must support.

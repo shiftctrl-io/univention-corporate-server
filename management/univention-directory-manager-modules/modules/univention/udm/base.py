@@ -34,7 +34,6 @@ from __future__ import absolute_import, unicode_literals
 import copy
 import pprint
 from collections import namedtuple
-from ldap.filter import filter_format
 from .plugins import Plugin
 from .exceptions import NoObject, MultipleObjects
 
@@ -292,6 +291,7 @@ class BaseModule(object):
 		:raises NoObject: if no object is found with ID `id`
 		:raises MultipleObjects: if more than one object is found with ID `id`
 		"""
+		from ldap.filter import filter_format
 		filter_s = filter_format('{}=%s'.format(self.meta.identifying_property), (id,))
 		res = list(self.search(filter_s))
 		if not res:

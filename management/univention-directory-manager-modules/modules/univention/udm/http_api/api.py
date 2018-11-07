@@ -4,18 +4,18 @@ import logging
 import urllib
 import urlparse
 from ldap.filter import filter_format
-from flask import Blueprint, Flask, g, request
+from flask import Blueprint, Flask, g
 from flask_httpauth import HTTPBasicAuth
 from flask_restplus import Api, Namespace, Resource, abort, reqparse
 from werkzeug.contrib.fixers import ProxyFix
-from univention.admin.uexceptions import authFail
+from univention.admin.uexceptions import authFail, valueInvalidSyntax
 
 from ..udm import UDM
 from ..exceptions import NoSuperordinate, UdmError
 from ..encoders import _classify_name
 from ..helpers import get_all_udm_module_names
 from .utils import setup_logging, ucr
-from .resource_model import get_model, get_udm_module
+from .resource_model import get_model
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
@@ -53,9 +53,17 @@ api = Api(
 app.register_blueprint(blueprint)
 
 
-def search_single_object(module_name, id, abort_on_error=True):  # type: (Text, Text, Optional[bool]) -> BaseObjectTV
-	mod = get_udm_module(module_name=module_name, udm_api_version=UDM_API_VERSION)
+def search_single_object(udm, module_name, id, abort_on_error=True):
+	# type: (UDM, Text, Text, Optional[bool]) -> BaseObjectTV
+	mod = udm.get(module_name)
 	identifying_property = mod.meta.identifying_property
+
+	if id in (None, '', ','):
+		obj = mod.new()
+		obj.id = '_new_'
+		setattr(obj.props, identifying_property, '_new_')
+		return obj
+
 	filter_s = filter_format('%s=%s', (identifying_property, id))
 	res = list(mod.search(filter_s))
 	if len(res) == 0:
@@ -81,7 +89,7 @@ def docstring_params(*args, **kwargs):
 	return dec_func
 
 
-def url2dn(url):  # type: (Text) -> Text
+def url2dn(udm, url):  # type: (UDM, Text) -> Text
 	# url2dn - without doing a GET on the url and simply reading the DN
 	path = urlparse.urlsplit(url).path
 	resource_url, _sep, obj_id_enc = path.rpartition('/')
@@ -92,7 +100,7 @@ def url2dn(url):  # type: (Text) -> Text
 		msg = 'Cannot find module to path in URL {!r}.'.format(url)
 		logger.error('422: %s', msg)
 		abort(422, msg)
-	obj = search_single_object(module_name, obj_id, abort_on_error=False)
+	obj = search_single_object(udm, module_name, obj_id, abort_on_error=False)
 	if not obj:
 		msg = 'Cannot find {!r} object in LDAP for {!r}.'.format(module_name, url)
 		logger.error('422: %s', msg)
@@ -102,7 +110,7 @@ def url2dn(url):  # type: (Text) -> Text
 
 @auth.verify_password
 def verify_pw(username, password):  # type: (Text, Text) -> bool
-	logger.debug('*** username=%r password=%r', username, password)
+	# logger.debug('*** username=%r password=%r', username, password)
 	if g.get('udm'):
 		logger.error('Already set: g.udm=%r', g.udm)
 		abort(500)
@@ -129,12 +137,25 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 			"""List all {} objects."""
 			logger.debug('UdmResourceList.get() self._udm_object_type=%r', self._udm_object_type)
-			mod = get_udm_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION)
+			parser = reqparse.RequestParser()
+			parser.add_argument('filter', type=str, location='headers', dest='filter_s', help='LDAP filter [optional].')
+			parser.add_argument('base', type=str, location='headers', help='LDAP subtree to search [optional].')
+			parser.add_argument('scope', type=str, location='headers', help='LDAP scope to apply [optional].')
+			args = parser.parse_args()
+			logger.debug('UdmResourceList.get() args=%r', args)
+			search_kwargs = dict((k, v) for k, v in args.items() if v and v.strip())  # remove non-empty values
+			logger.debug('UdmResourceList.get() search_kwargs=%r', search_kwargs)
+			mod = g.udm.get(self._udm_object_type)
 			identifying_property = mod.meta.identifying_property
 			res = []
-			for obj in mod.search():
-				setattr(obj, 'id', getattr(obj.props, identifying_property))
-				res.append(obj)
+			try:
+				for obj in mod.search(**search_kwargs):
+					setattr(obj, 'id', getattr(obj.props, identifying_property))
+					res.append(obj)
+			except valueInvalidSyntax:
+				msg = 'The LDAP query had an invalid syntax.'
+				logger.error('422: %s', msg)
+				abort(422, msg)
 			if not res:
 				msg = 'No {!r} objects exist.'.format(self._udm_object_type)
 				logger.error('404: %s', msg)
@@ -148,7 +169,7 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
 			"""Create a new {} object."""
 			logger.debug('UdmResourceList.post() self._udm_object_type=%r', self._udm_object_type)
-			mod = get_udm_module(module_name=self._udm_object_type, udm_api_version=UDM_API_VERSION)
+			mod = g.udm.get(self._udm_object_type)
 			identifying_property = mod.meta.identifying_property
 			parser = reqparse.RequestParser()
 			parser.add_argument('options', type=list, help='Options of object [optional].')
@@ -189,21 +210,18 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		@namespace.marshal_with(api_model, skip_none=True)
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def get(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-			"""Fetch a {} object given its name."""
+			"""Fetch a {} object given its id."""
 			logger.debug('UdmResourceList.get() id=%r self._udm_object_type=%r', id, self._udm_object_type)
-			logger.debug('*** g.get(udm)=%r', g.get('udm'))
-			assert g.get('udm') is not None
-			logger.debug('*** username=%r password=%r', request.authorization.username, request.authorization.password)
-			obj = search_single_object(self._udm_object_type, id)
+			obj = search_single_object(g.udm, self._udm_object_type, id)
 			return obj, 200
 
 		@namespace.doc('delete')
 		@namespace.response(204, 'Object deleted')
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def delete(self, id):  # type: (Text) -> Tuple[Text, int]
-			"""Delete a {} object given its name."""
+			"""Delete a {} object given its id."""
 			logger.debug('UdmResourceList.delete() id=%r self._udm_object_type=%r', id, self._udm_object_type)
-			obj = search_single_object(self._udm_object_type, id)
+			obj = search_single_object(g.udm, self._udm_object_type, id)
 			logger.info('Deleting {!r}...'.format(obj))
 			obj.delete()
 			return '', 204
@@ -213,9 +231,9 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		@namespace.marshal_with(api_model, skip_none=True)
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
-			"""Update a {} object given its name."""
+			"""Update a {} object given its id."""
 			logger.debug('UdmResourceList.put() id=%r self._udm_object_type=%r', id, self._udm_object_type)
-			obj = search_single_object(self._udm_object_type, id)
+			obj = search_single_object(g.udm, self._udm_object_type, id)
 			parser = reqparse.RequestParser()
 			parser.add_argument('options', type=list, help='Options of object [optional].')
 			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
@@ -256,9 +274,9 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 							pass
 						elif content_desc == 'obj':
 							if is_list:
-								value = [url2dn(url) for url in value]
+								value = [url2dn(g.udm, url) for url in value]
 							else:
-								value = url2dn(value)
+								value = url2dn(g.udm, value)
 						else:
 							# logger.debug('content_desc is not dict or obj')
 							pass
@@ -301,6 +319,10 @@ for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomp
 	api.add_namespace(ns, path='/{}'.format(udm_object_type))
 	create_resource(udm_object_type, ns, ns_model)
 	_url2module['{}/{}'.format(blueprint.url_prefix, api.get_ns_path(ns).strip('/'))] = udm_object_type
+
+# TODO: ressource for metadata:
+# * get supported API versions
+# * credentials test
 
 
 if __name__ == '__main__':

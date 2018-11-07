@@ -39,8 +39,14 @@ def get_udm_module(module_name, udm_api_version):  # type: (Text, int) -> Generi
 
 
 class NoneList(fields.List):
+	def __init__(self, cls_or_instance, **kwargs):
+		self.empty_as_list = kwargs.pop('empty_as_list', False)
+		super(NoneList, self).__init__(cls_or_instance, **kwargs)
+
 	def format(self, value):  # type: (Union[Text, List[Any], None]) -> Union[List[Any], None]
-		return None if value in ('', None, []) else super(NoneList, self).format(value)
+		if value in ('', [], None):
+			return [] if self.empty_as_list else None
+		return super(NoneList, self).format(value)
 
 	def output(self, key, data, ordered=False, **kwargs):
 		# handle empty lists encoded as an empty strings which lead to
@@ -51,10 +57,7 @@ class NoneList(fields.List):
 		return super(NoneList, self).output(key, data, ordered, **kwargs)
 
 
-class NoneListWithObjs(fields.List):
-	def format(self, value):  # type: (Union[Text, List[Any], None]) -> Union[List[Any], None]
-		return None if value in ('', None, []) else super(NoneListWithObjs, self).format(value)
-
+class NoneListWithObjs(NoneList):
 	def output(self, key, data, ordered=False, **kwargs):
 		if (
 				(isinstance(data, GenericObject) or isinstance(data, GenericObjectProperties)) and
@@ -87,13 +90,17 @@ class NoneIntField(fields.Integer):
 
 class IdField(fields.String):
 	def format(self, value):  # type: (Optional[Text]) -> Union[Text, None]
-		return None if value in ('', None) else super(IdField, self).format(value)
+		return super(IdField, self).format('' if value is None else value)
 
 
 class Obj2UrlField(fields.Url):
 	udm_module_name = ''
 	endpoint = ''
 	_specific_cls_cache = {}  # type: Dict[Text, Obj2UrlFieldTV]
+
+	def __init__(self, endpoint=None, absolute=False, scheme=None, **kwargs):
+		self.empty_as_string = kwargs.pop('empty_as_string', False)
+		super(Obj2UrlField, self).__init__(endpoint, absolute, scheme, **kwargs)
 
 	def id2uri(self, id):
 		try:
@@ -126,7 +133,9 @@ class Obj2UrlField(fields.Url):
 			res_obj = getattr(obj, key)
 		if isinstance(res_obj, DnPropertyEncoder.DnStr):
 			res_obj = getattr(res_obj, 'obj')
-		return None if res_obj in ('', None) else self.obj2uri(res_obj)
+		if res_obj in ('', None):
+			return '' if self.empty_as_string else None
+		return self.obj2uri(res_obj)
 
 	def format(self, value):  # type: (Optional[Text]) -> Union[Text, None]
 		return None if value in ('', None) else self.obj2uri(value)
@@ -249,8 +258,9 @@ def get_model(module_name, udm_api_version, api):
 		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
 		('options', fields.List(fields.String, description='List of options.')),
 		('policies', NoneListWithObjs(
-			specific_obj2urlfield_cls, description='List policy objects, that apply for this object.')),
+			specific_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
 		('position', fields.String(description='DN of LDAP node below which the object is located.')),
 		('props', fields.Nested(api.model('{}Properties'.format(_classify_name(mod.name)), props), skip_none=True)),
-		('uri', Obj2UrlField(resource_name2endpoint(api.name), absolute=True)),  # TODO: , scheme='https'
+		('superordinate', Obj2UrlField(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),
+		('uri', Obj2UrlField(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),  # TODO: , scheme='https'
 	))

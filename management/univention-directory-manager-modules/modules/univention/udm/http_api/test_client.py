@@ -15,8 +15,9 @@ from bravado.exception import HTTPUnauthorized
 
 
 HOST = '10.20.30.5'
+PORT = 80
 SCHEME = 'http'
-SWAGGER_URL = '{}://{}/udm/swagger.json'.format(SCHEME, HOST)
+SWAGGER_URL = '{}://{}:{}/udm/swagger.json'.format(SCHEME, HOST, PORT)
 
 
 def random_str():
