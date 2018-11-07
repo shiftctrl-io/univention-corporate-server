@@ -968,7 +968,6 @@ define([
 				}
 				oldModuleName = oldModuleName.replace(/[^a-zA-Z0-9\-]/g, '-');
 				var cssname = lang.replace('scrollless-{0}', [oldModuleName]);
-				domClass.remove(this._tabContainer.domNode, cssname);
 				domClass.remove(this._topContainer.domNode, cssname);
 			}
 			var newModuleName = newModule.isOverview ? 'overview' : newModule.moduleID;
@@ -977,7 +976,6 @@ define([
 			}
 			newModuleName = newModuleName.replace(/[^a-zA-Z0-9\-]/g, '-');
 			var cssname = lang.replace('scrollless-{0}', [newModuleName]);
-			domClass.add(this._tabContainer.domNode, cssname);
 			domClass.add(this._topContainer.domNode, cssname);
 			return;
 

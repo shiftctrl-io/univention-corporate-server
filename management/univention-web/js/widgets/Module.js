@@ -112,10 +112,14 @@ define([
 			this.inherited(arguments);
 
 			this._bottom = new ContainerWidget({
+				baseClass: 'umcModuleWrapperWrapper'
+			});
+			var wrapper = new ContainerWidget({
 				baseClass: 'umcModuleWrapper',
 				'class': 'container'
 			});
-			this._bottom.addChild(this.__container);
+			wrapper.addChild(this.__container);
+			this._bottom.addChild(wrapper);
 
 			this._top = new ModuleHeader({
 				//buttons: render.buttons(this.headerButtons, this),
@@ -126,6 +130,7 @@ define([
 				'class': 'scrollToTopFloatingButton'
 			});
 			var ink = put(scrollToTopFloatingButton.domNode, 'div.icon + div.ink');
+			var scrollNode = this._bottom.domNode;
 			scrollToTopFloatingButton.on('click', function(e) {
 				// show ink effect
 				var floatingButtonDiameter = domGeom.position(scrollToTopFloatingButton.domNode).w;
@@ -163,9 +168,9 @@ define([
 				new baseFx.Animation({
 					duration: 300,
 					easing: fxEasing.cubicOut,
-					curve: [dojo.docScroll().y, 0],
+					curve: [scrollNode.scrollTop, 0],
 					onAnimate: function(val) {
-						window.scrollTo(0, val);
+						scrollNode.scrollTo(0, val);
 					}
 				}).play();
 			});
@@ -176,27 +181,23 @@ define([
 
 			ContainerWidget.prototype.addChild.apply(this, [this._top]);
 			ContainerWidget.prototype.addChild.apply(this, [this._bottom]);
-			ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButton]);
-			ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButtonSpacer]);
+			// ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButton]);
+			// ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButtonSpacer]);
 
 			// redirect childrens to stack container
 			this.containerNode = this.__container.containerNode;
 
-			// this.own(on(baseWindow.doc, 'scroll', lang.hitch(this, function() {
-			this.own(on(this.domNode, 'scroll', lang.hitch(this, function() {
-				console.log('scroll'); // TODO remove (test if floating button works in modules without scrollless)
+			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function(evt) {
 				if (!this.selected) {
 					return;
 				}
 
+				domClass.toggle(this.domNode, 'scrollIsNotAtTop', evt.target.scrollTop > 0);
+
 				// update scrollToTop Button visibility
-				var showScrollToTopButton = dojo.docScroll().y >= 300;
+				var showScrollToTopButton = evt.target.scrollTop >= 300;
 				domClass.toggle(scrollToTopFloatingButton.domNode, 'shown', showScrollToTopButton);
 				domClass.toggle(scrollToTopFloatingButtonSpacer.domNode, 'shown', showScrollToTopButton);
-			})));
-			// TODO remove
-			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function() {
-				console.log('scroll');
 			})));
 		},
 
