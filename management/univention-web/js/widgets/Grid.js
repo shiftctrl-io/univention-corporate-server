@@ -347,7 +347,7 @@ define([
 		_heightenGrid: function(extension) {
 			var gridHeight = style.get(this._grid.domNode, "height");
 			var newMaxGridHeight = gridHeight + extension;
-			style.set(this._grid.domNode, "max-height", newMaxGridHeight + 'px');
+			// style.set(this._grid.domNode, "max-height", newMaxGridHeight + 'px');
 			this._grid.resize();
 			var gridIsFullyRendered = this._grid.domNode.scrollHeight < newMaxGridHeight;
 			if (gridIsFullyRendered) {
@@ -1036,7 +1036,7 @@ define([
 		},
 
 		filter: function(query, options) {
-			style.set(this._grid.domNode, 'max-height', '1px');
+			// style.set(this._grid.domNode, 'max-height', '1px');
 			this.standby(true);
 			this._filter(query, options).then(lang.hitch(this, function() {
 				this.standby(false);

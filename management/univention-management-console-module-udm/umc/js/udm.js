@@ -474,6 +474,7 @@ define([
 
 			// setup search page
 			this._searchPage = new Page({
+				'class': 'umcUDMSearchPage',
 				headerText: this.description,
 				helpText: metaInfo.help_text || '',
 				headerButtons: buttons,

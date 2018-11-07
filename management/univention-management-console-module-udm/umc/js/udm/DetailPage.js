@@ -187,12 +187,12 @@ define([
 
 		isSyncedObject: null, // object which is modified (or one of multiedited) has univentionObjectFlag == synced
 
-		'class': 'udmDetailPage',
 		standbyOpacity: 0,  // the standby animation should be transparent to improove visiblity when loading the object
 
 		postMixInProperties: function() {
 			this.inherited(arguments);
 
+			this.baseClass += ' umcUDMDetailPage';
 			this._multiEdit = this.ldapName instanceof Array;
 			this._tabControllers = [];
 			this._pageRenderedDeferred = new Deferred();

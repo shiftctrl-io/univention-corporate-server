@@ -117,6 +117,18 @@ define([
 			lang.mixin(this, props);
 		},
 
+		buildRendering: function() {
+			this.inherited(arguments);
+
+			this.noResultsNode = domConstruct.create('div', {
+				innerHTML: _('No results'),
+				'class': 'dijitDisplayNone',
+				style: {
+					'text-align': 'center'
+				}
+			}, this.domNode, 'first');
+		},
+
 		postMixInProperties: function() {
 			this.queryOptions = {
 				sort: [{
@@ -179,6 +191,12 @@ define([
 				}
 			}
 			return div;
+		},
+
+		renderArray: function(results) {
+			this.inherited(arguments);
+
+			domClass.toggle(this.noResultsNode, 'dijitDisplayNone', results.length);
 		},
 
 		getItemDescription: function(item) {
@@ -652,6 +670,7 @@ define([
 		},
 
 		toggleBackToOverviewVisibility: function(visible) {
+			return;
 			if (this._backToOverviewButton) {
 				this._backToOverviewButton.set('visible', visible);
 			}

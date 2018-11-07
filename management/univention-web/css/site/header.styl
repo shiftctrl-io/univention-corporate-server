@@ -82,7 +82,7 @@ headerHeight = 48px
 				text-overflow: ellipsis
 
 				^[-1].dijitTabChecked ^[-1..-1]
-					border-bottom: 3px solid #fff
+					border-bottom: 4px solid #fff
 
 			.dijitTabCloseButton
 				display: none
@@ -138,7 +138,7 @@ headerHeight = 48px
 			transition: width 0.3s
 
 			.umcSearchBox
-				margin-top: 9px
+				margin-top: 7px
 
 			.dijitInputField
 				transition: opacity 0.25s, width 0.25s
@@ -148,21 +148,6 @@ headerHeight = 48px
 
 			.umcLiveSearchSidebarRadioButtonGroup
 				display: none
-
-			&.collapsed
-				width: 60px
-
-				.umcSearchBox,
-				.umcSearchBox:before,
-				.umcSearchBox:after
-					border-color: transparent
-
-				.umcSearchIcon
-					margin-right: 20px
-
-				.dijitInputField
-					opacity: 0
-					width: 0
 
 		.umcNotificationDropDownButton
 			position: relative
@@ -227,16 +212,12 @@ headerHeight = 48px
 		.univentionLogo
 			display: inline-block
 			vertical-align: top
-			background-image: url(../images/univention.svg)
+			background-image: url(../images/univention_u.svg)
 			background-repeat: no-repeat
 			background-position: center center
 			height: headerHeight
-			width: 160px
+			width: 30px
 			margin-left: 5px
-
-			@media (max-width: 650px)
-				background-image: url(../images/univention_u.svg)
-				width: 30px
 
 	.dijitButtonNode
 		height: auto !important
@@ -294,10 +275,12 @@ headerHeight = 48px
 			background-image: url('../images/home.svg')
 			background-color: #c6c6c6
 
-			&.dijitHover,
-			&.dijitActive
-				.dijitButtonNode
-					cursor: default
+			.dijitButtonNode,
+			.dijitButtonContents
+				cursor: default
+
+			.dijitButtonNode
+				border-bottom: 4px solid $text-color
 
 		.umcMainTabController .dijitTab
 			color: rgba(0, 0, 0, 0.7)
@@ -490,8 +473,8 @@ headerHeight = 48px
 		width: 80%
 		max-width: 360px
 		background-color: #fff
-		transition: transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.3s
-		-webkit-transition: -webkit-transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.3s
+		transition: transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.2s
+		-webkit-transition: -webkit-transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.2s
 		z-index: 30
 		transform: translate3d(110%, 0, 0)
 
@@ -604,8 +587,8 @@ headerHeight = 48px
 
 				overflow: auto
 
-				transition: transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.3s
-				-webkit-transition: -webkit-transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.3s
+				transition: transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.2s
+				-webkit-transition: -webkit-transform cubic-bezier(0.4, 0.0, 0.6, 1) 0.2s
 
 				&.mainSlide
 					.menuSlideHeader
@@ -626,7 +609,7 @@ headerHeight = 48px
 							background-color: #f5f5f5
 
 						&.menuItemActiveTransition
-							$transitionDur = 0.3s
+							$transitionDur = 0.2s
 
 							transition: background-color $transitionDur
 							.popupMenuItemArrow,
@@ -681,8 +664,8 @@ headerHeight = 48px
 
 			.menuSlide.visibleSlide
 				transform: translate3d(0, 0, 0) scale(1, 1)
-				transition: transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.3s
-				-webkit-transition: -webkit-transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.3s
+				transition: transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.2s
+				-webkit-transition: -webkit-transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.2s
 
 	.mobileMenuCloseOverlay
 		position: fixed
@@ -715,8 +698,8 @@ headerHeight = 48px
 		.mobileMenu
 			transform: translate3d(0, 0, 0) !important
 			box-shadow: 0px 0px 10px 3px $grey-dark
-			transition: transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.3s
-			-webkit-transition: -webkit-transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.3s
+			transition: transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.2s
+			-webkit-transition: -webkit-transform cubic-bezier(0.0, 0.0, 0.2, 1) 0.2s
 
 	&.mobileMenuToggleButtonActive
 		.umcMobileMenuToggleButton
