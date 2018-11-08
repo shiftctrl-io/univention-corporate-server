@@ -996,6 +996,36 @@ define([
 			newModuleName = newModuleName.replace(/[^a-zA-Z0-9\-]/g, '-');
 			var cssname = lang.replace('scrollless-{0}', [newModuleName]);
 			domClass.add(this._topContainer.domNode, cssname);
+
+
+			if (this._scrolllessModuleWatchHandler) {
+				this._scrolllessModuleWatchHandler.remove();
+				this._scrolllessModuleWatchHandler = null;
+			}
+			var removeUDMClass = lang.hitch(this, function () {
+				domClass.remove(this._topContainer.domNode, ['scrollless-udm-searchpage', 'scrollless-udm-detailpage']);
+			});
+			var addUDMClass = lang.hitch(this, function (module) {
+				domClass.remove(this._topContainer.domNode, ['scrollless-udm-searchpage', 'scrollless-udm-detailpage']);
+				var cssClass;
+				switch (module.selectedChildWidget) {
+					case module._searchPage:
+						cssClass = 'scrollless-udm-searchpage';
+						break;
+					case module._detailPage:
+						cssClass = 'scrollless-udm-detailpage';
+						break;
+				}
+				domClass.add(this._topContainer.domNode, cssClass);
+			});
+			// udm stuff
+			removeUDMClass();
+			if (newModule.moduleID === 'udm') {
+				addUDMClass(newModule);
+				this._scrolllessModuleWatchHandler = newModule.watch('selectedChildWidget', lang.hitch(this, function(name, oldChild, newChild) {
+					addUDMClass(newModule); // TODO use paramters ?
+				}));
+			}
 			return;
 
 

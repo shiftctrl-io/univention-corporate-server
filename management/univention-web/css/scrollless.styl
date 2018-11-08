@@ -6,32 +6,48 @@
 
 .umcHeader
 	z-index: 2
-	material-shadow(1)
-	// border-bottom: $grey-medium
-	background-color: rgba(0, 0, 0, 0.02) // TODO remove
-	background-color: rgba(0, 0, 0, 0.009) // TODO remove
+	border-bottom: 1px solid $grey-medium
 	background-color: $grey-lightest
 
-@media (max-width: $sm-max)
-	.umcHeader
-		position: fixed
-		top: 0
-		left: 0
-		right: 0
+.umcHeader
+	position: fixed
+	top: 0
+	left: 0
+	right: 0
 
-	.umcMainTabContainer
-		top: 48px
+.umcMainTabContainer
+	top: 48px
 
-@media (min-width: $md-min) and (min-height: 750px)
-	.umcHeader
+// TODO whitelist this for all modules
+.umcGrid .dgrid
+	height: auto
+	max-height: 30em
+	display: flex
+	flex-direction: column
+	.dgrid-scroller
 		position: relative
+		overflow-y: auto
+		overflow-x: hidden
+		// height: 100%
 
-	// scrollless: basis
-	#umcTopContainer.scrollless-appcenter-appcenter,
+.umcGridTree .dgrid
+	height: auto
+	max-height: 30em
+	display: flex
+	flex-direction: column
+	.dgrid-scroller
+		position: relative
+		overflow-y: auto
+		overflow-x: hidden
+		// height: 100%
+
+
+
+@media (min-height: 750px)
+	#umcTopContainer.scrollless-appcenter-appcenter, // scrollless basis
 	#umcTopContainer.scrollless-appcenter-packages,
 	#umcTopContainer.scrollless-appcenter-components,
 	#umcTopContainer[class*=' scrollless-udm'],
-	#umcTopContainer.scrollless-overview,
 	#umcTopContainer.scrollless-setup-certificate,
 	#umcTopContainer.scrollless-setup-languages,
 	#umcTopContainer.scrollless-setup-network,
@@ -46,6 +62,9 @@
 		bottom: 0
 		left: 0
 		right: 0
+
+		.umcHeader
+			position: relative
 
 		.umcMainTabContainer
 			position: absolute
@@ -68,197 +87,161 @@
 
 	// TODO this could theoretically be put into 'basis'
 	// scrollless: fixed module header
-	#umcTopContainer.scrollless-appcenter-appcenter,
+	#umcTopContainer.scrollless-appcenter-appcenter, // migrate into basis
+	#umcTopContainer.scrollless-appcenter-packages, // theoretically not needed if 'basis' and 'grid page' have same min-height (and also beside that not)
 	#umcTopContainer.scrollless-appcenter-components,
+	#umcTopContainer[class*=' scrollless-udm'],
 	#umcTopContainer.scrollless-setup-certificate,
 	#umcTopContainer.scrollless-setup-languages,
 	#umcTopContainer.scrollless-setup-network,
 	#umcTopContainer.scrollless-mrtg,
 	#umcTopContainer.scrollless-diagnostic,
-	#umcTopContainer.scrollless-updater
+	#umcTopContainer.scrollless-updater,
+	#umcTopContainer.scrollless-top
 		.umcModuleHeader
 			position: relative
 			z-index: 1
-			transition: box-shadow 0.2s
 		.umcModule.scrollIsNotAtTop .umcModuleHeader
-			material-shadow(1)
+			border-bottom: 1px solid $grey-medium
 
 		.umcModuleWrapperWrapper
 			overflow-y: auto
 			overflow-x: hidden
 
 	// TODO this has duplicated style with UDM. find a basis
-	// scrollless: basic page with one grid
-	#umcTopContainer.scrollless-appcenter-packages,
-	#umcTopContainer.scrollless-top,
-	#umcTopContainer.scrollless-services,
-	#umcTopContainer.scrollless-ucr
-		.umcModuleWrapper,
-		.umcModuleContent,
-		.umcModuleContentChildWrapper,
-		.umcPage
-			height: 100%
+	// scrollless: basic page with one main grid
+	@media (min-height: 750px) and (min-width: $xs-min)
+		#umcTopContainer.scrollless-appcenter-packages,
+		#umcTopContainer.scrollless-top,
+		#umcTopContainer.scrollless-services,
+		#umcTopContainer.scrollless-ucr
+			.umcGrid .dgrid
+				max-height: none
+			.umcGridTree .dgrid
+				max-height: none
 
-		.umcPage
-			display: flex
-			&.umcPage-fullWidth
-				flex-direction: column
-
-			.umcPageNav
-				flex: 1 0 auto // prevent shrinking
-				padding-bottom: 16px
-				margin-bottom: 8px
-			&.umcPage-fullWidth .umcPageNav
-				padding-bottom: 0
-
-			.umcPageMain
+			.umcModuleWrapper,
+			.umcModuleContent,
+			.umcModuleContentChildWrapper,
+			.umcPage
 				height: 100%
-				padding-bottom: 16px
 
-			.umcPageFooter
-				display: none
-
-			.umcGrid
-				max-height: 100%
+			.umcPage
 				display: flex
-				flex-direction: column
+				&.umcPage-fullWidth
+					flex-direction: column
 
-				.dgrid
+				.umcPageNav
+					flex: 1 0 auto // prevent shrinking
+					padding-bottom: 16px
+					margin-bottom: 8px
+				&.umcPage-fullWidth .umcPageNav
+					padding-bottom: 0
+
+				.umcPageMain
 					height: 100%
+					padding-bottom: 16px
+
+				.umcPageFooter
+					display: none
+
+				.umcGrid
+					max-height: 100%
 					display: flex
 					flex-direction: column
 
-				.dgrid-header
-					z-index: 1
-					transition: $material-shadow-transition-value
-				&.scrollIsNotAtTop .dgrid-header
-					material-shadow(2)
+	@media (min-height: 750px)
+		#umcTopContainer[class*=' scrollless-udm'].scrollless-udm-searchpage
+			.umcGrid .dgrid
+				max-height: none
 
-				.dgrid-scroller
-					height: 100%
-					overflow-y: auto
-					overflow-x: hidden // TODO when there is a scrollbar the dgrid-content now has less space on the right side. depending on the size of the scrollbar this could be a problem
+			.umcGridTree .dgrid
+				max-height: none
 
-	#umcTopContainer[class*=' scrollless-udm']
-		.umcModuleWrapper,
-		.umcModuleContent,
-		.umcModuleContentChildWrapper,
-		.umcUDMDetailPage,
-		.umcUDMSearchPage,
-		.umcPage,
-		.umcUDMDetailForm,
-		.umcUDMDetailForm > div,
-		.umcUDMDetailForm > div > div,
-		.umcUDMDetailForm > div > div > div
-			height: 100%
-
-		.umcPage
-			display: flex
-			&.umcPage-fullWidth
-				flex-direction: column
-
-			.umcPageNav
-				flex: 1 0 auto // prevent shrinking
-				padding-bottom: 16px
-			&.umcPage-fullWidth .umcPageNav
-				padding-bottom: 0
-
-			.umcPageMain
-				width: 100%
+			.umcModuleWrapper,
+			.umcModuleContent,
+			.umcModuleContentChildWrapper,
+			.umcUDMSearchPage
 				height: 100%
-				padding-bottom: 16px
 
-			.umcPageFooter
-				display: none
-
-			.umcGrid
-				max-height: 100%
+			.umcUDMSearchPage
 				display: flex
-				flex-direction: column
+				&.umcPage-fullWidth
+					flex-direction: column
 
-				.dgrid
+				.umcPageNav
+					flex: 1 0 auto // prevent shrinking
+					padding-bottom: 16px
+				&.umcPage-fullWidth .umcPageNav
+					padding-bottom: 0
+
+				.umcPageMain
+					width: 100%
 					height: 100%
+					padding-bottom: 16px
+
+				.umcPageFooter
+					display: none
+
+				.umcGrid
+					max-height: 100%
 					display: flex
 					flex-direction: column
 
-				.dgrid-header
-					z-index: 1
-					transition: $material-shadow-transition-value
-				&.scrollIsNotAtTop .dgrid-header
-					material-shadow(2)
-
-				.dgrid-scroller
-					height: 100%
-					overflow-y: auto
-					overflow-x: hidden // TODO when there is a scrollbar the dgrid-content now has less space on the right side. depending on the size of the scrollbar this could be a problem
-
-			.umcGridTree
-				max-height: 100%
-				display: flex
-				flex-direction: column
-
-				.dgrid
-					height: 100%
+				.umcGridTree
+					max-height: 100%
 					display: flex
 					flex-direction: column
 
-				.dgrid-scroller
-					height: 100%
-					overflow-y: auto
-
-		.umcUDMDetailPage
-			.umcPageMain
-				overflow-y: auto
-
-		.umcUDMSearchPage
-			.umcPageMain
-				// for search page with tree in nav and searchpage+grid in main
-				display: flex
-				flex-direction: column
-
-	.scrollless-overview
-		#umcOverviewPage
-			height: 100%
-
-			.umcPageMain
-				height: 100%
-
-				display: flex
-				flex-direction: column
-
-				.umcOverviewPane
-					// min-height: 0% // TODO firefox?
-					height: 100%
-					transition: background-color 0.2s, box-shadow 0.2s
+					.dgrid
+						height: 100%
+						display: flex
+						flex-direction: column
 
 					.dgrid-scroller
 						height: 100%
 						overflow-y: auto
 
-					&.umcOverviewPaneOverflown
-						material-shadow(1)
-						background-color: rgba(0, 0, 0, 0.02)
+		@media (max-width: $sm-max)
+			#umcTopContainer[class*=' scrollless-udm'].scrollless-udm-searchpage.scrollless-udm-navigation
+				.umcGrid .dgrid
+					max-height: 30em
 
-			.umcPageFooter // TODO move to Page.js noFooter boolean or main.js OverviewPage creation
-				display: none
+				.umcGridTree .dgrid
+					max-height: 30em
+
+				.umcModuleWrapper,
+				.umcModuleContent,
+				.umcModuleContentChildWrapper,
+				.umcUDMSearchPage
+					height: auto
+
+				.umcUDMSearchPage
+					flex-direction: column
 
 
-@media (min-width: $md-min)
-	.nonexistent
-		.umcHeader
-			z-index: 1
-			material-shadow(1)
-			background-color: rgba(0, 0, 0, 0.01)
-
-		.umcOverviewNotShown .umcHeader
-			material-shadow(1)
-
-		
-
-		.scrollless-overview
-			> .dijitStackContainerChildWrapper
+	@media (min-width: $md-min)
+		#umcTopContainer[class*=' scrollless-udm']
+			.umcUDMDetailPage,
+			.umcUDMDetailForm,
+			.umcUDMDetailForm > div,
+			.umcUDMDetailForm > div > div,
+			.umcUDMDetailForm > div > div > div
+			.umcUDMDetailForm .umcPage
 				height: 100%
 
+			.umcUDMDetailPage
+				.umcPageMain
+					overflow-y: auto
+
+		#umcTopContainer.scrollless-udm-navigation
+			.umcUDMSearchPage
+				.umcPageMain
+					display: flex
+					flex-direction: column
+
+	@media (min-width: $sm-min)
+		.notnow.scrollless-overview
 			#umcOverviewPage
 				height: 100%
 
@@ -273,233 +256,9 @@
 						height: 100%
 						transition: background-color 0.2s, box-shadow 0.2s
 
-						.dgrid-scroller
-							height: 100%
-							overflow-y: auto
-
 						&.umcOverviewPaneOverflown
 							material-shadow(1)
 							background-color: rgba(0, 0, 0, 0.02)
 
 				.umcPageFooter // TODO move to Page.js noFooter boolean or main.js OverviewPage creation
 					display: none
-
-
-		.scrollless-quota,
-		.scrollless-join,
-		.scrollless-top,
-		.scrollless-services,
-		.scrollless-ucr,
-		.scrollless-setup-network, // does not need umcGrid style / needs moduleHeader box-shadow
-		.scrollless-setup-languages, // does not need umcGrid style / needs moduleHeader box-shadow
-		.scrollless-setup-certificate, // does not need umcGrid style / needs moduleHeader box-shadow
-		.scrollless-mrtg,
-		.scrollless-appcenter-packages,
-		// .scrollless-appcenter-components,
-		.scrollless-appcenter-appcenter,
-		.scrollless-updater
-			> .dijitStackContainerChildWrapper
-				height: 100%
-
-			.umcModule
-				height: 100%
-				display: flex // TODO wouldn't be needed if module header has fixed height. May be a performance consideration
-				flex-direction: column
-
-			.umcModuleWrapper
-				min-height: 0
-				height: 100%
-				@media (max-width: $xs-max)
-					width: 100%
-
-			.umcModuleContent
-				height: 100%
-
-			.umcModuleContentChildWrapper
-				height: 100%
-
-			.umcPage
-				height: 100%
-				display: flex
-				&.umcPage-fullWidth
-					flex-direction: column
-
-				.umcPageNav
-					flex: 1 0 auto // prevent shrinking
-					padding-bottom: 16px
-				&.umcPage-fullWidth .umcPageNav
-					padding-bottom: 0
-
-				.umcPageMain
-					// width: 100%
-					height: 100%
-					// overflow-y: auto
-					padding-bottom: 16px
-
-					// for search page with tree in nav and searchpage+grid in main
-					// display: flex
-					// flex-direction: column
-
-				.umcPageFooter
-					display: none
-
-				.umcGrid
-					max-height: 100%
-					display: flex
-					flex-direction: column
-
-					.dgrid
-						height: 100%
-						display: flex
-						flex-direction: column
-
-					.dgrid-header
-						z-index: 1
-						transition: $material-shadow-transition-value
-					&.scrollIsNotAtTop .dgrid-header
-						material-shadow(2)
-
-					.dgrid-scroller
-						height: 100%
-						overflow-y: auto
-						overflow-x: hidden // TODO when there is a scrollbar the dgrid-content now has less space on the right side. depending on the size of the scrollbar this could be a problem
-
-		.scrollless-join,
-		.scrollless-setup-network,
-		.scrollless-setup-languages,
-		.scrollless-setup-certificate,
-		.scrollless-mrtg,
-		// .scrollless-appcenter-components,
-		.scrollless-appcenter-appcenter,
-		.scrollless-updater
-			.umcPage
-				.umcPageMain
-					overflow-y: auto
-					overflow-x: hidden
-
-		.umcMainTabContainer[class*=' scrollless-udm']
-			> .dijitStackContainerChildWrapper
-				height: 100%
-
-			.umcModule
-				height: 100%
-				display: flex // TODO wouldn't be needed if module header has fixed height. May be a performance consideration
-				flex-direction: column
-
-			.umcModuleWrapper
-				min-height: 0
-				height: 100%
-				@media (max-width: $xs-max)
-					width: 100%
-
-			.umcModuleContent
-				height: 100%
-
-				// > .umcModuleContentChildWrapper
-					// height: 100%
-			.umcModuleContentChildWrapper
-				height: 100%
-
-			.umcModuleContent-child // detail page
-				height: 100%
-
-			.umcUDMDetailForm
-			.umcUDMDetailForm > div,
-			.umcUDMDetailForm > div > div,
-			.umcUDMDetailForm > div > div > div
-				height: 100%
-
-			.umcPage
-				height: 100%
-				display: flex
-				&.umcPage-fullWidth
-					flex-direction: column
-
-				.umcPageNav
-					flex: 1 0 auto // prevent shrinking
-					padding-bottom: 16px
-				&.umcPage-fullWidth .umcPageNav
-					padding-bottom: 0
-
-				.umcPageMain
-					width: 100%
-					height: 100%
-					overflow-y: auto
-					padding-bottom: 16px
-
-					// for search page with tree in nav and searchpage+grid in main
-					display: flex
-					flex-direction: column
-
-				.umcPageFooter
-					display: none
-
-				.umcGrid
-					max-height: 100%
-					display: flex
-					flex-direction: column
-
-					.dgrid
-						height: 100%
-						display: flex
-						flex-direction: column
-
-					.dgrid-header
-						z-index: 1
-						transition: $material-shadow-transition-value
-					&.scrollIsNotAtTop .dgrid-header
-						material-shadow(2)
-
-					.dgrid-scroller
-						height: 100%
-						overflow-y: auto
-						overflow-x: hidden // TODO when there is a scrollbar the dgrid-content now has less space on the right side. depending on the size of the scrollbar this could be a problem
-
-				.umcGridTree
-					max-height: 100%
-					display: flex
-					flex-direction: column
-					// min-height: 0
-					// margin-bottom: 0
-
-					.dgrid
-						height: 100%
-						display: flex
-						flex-direction: column
-						// min-height: 0
-
-					.dgrid-scroller
-						height: 100%
-						overflow-y: auto
-
-// searchpage
-.nonexistent
-	.umcModuleContent-umcPage
-		display: flex
-		flex-direction: column
-		height: 100%
-
-		.umcPageNav
-			flex: 1 0 auto // prevent shrinking
-
-		.umcPageMain
-			height: 100%
-
-			.umcGrid
-				max-height: 100%
-				display: flex
-				flex-direction: column
-
-				.dgrid
-					display: flex
-					flex-direction: column
-
-				.dgrid-header
-					z-index: 1
-					transition: $material-shadow-transition-value
-				&.scrollIsNotAtTop .dgrid-header
-					material-shadow(2)
-
-				.dgrid-scroller
-					overflow-y: auto
-					overflow-x: hidden // TODO when there is a scrollbar the dgrid-content now has less space on the right side. depending on the size of the scrollbar this could be a problem

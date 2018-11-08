@@ -190,7 +190,8 @@ define([
 		},
 
 		showApp: function(app) {
-			this.pageYOffsetBeforeShowApp = this._bottom.domNode.scrollTop;
+			this._bottomScrollYBeforeShowApp = this._bottom.domNode.scrollTop;
+			this._winowScrollYBeforeShowApp = window.pageYOffset;
 			if (this._appDetailsPage) {
 				this._appDetailsPage.destroyRecursive();
 			}
@@ -239,6 +240,11 @@ define([
 					this.set('title', entities.encode(newVal));
 				}
 			}));
+			this._appDetailsPage.watch('app', lang.hitch(this, function(){
+				this._bottom.domNode.scrollTo(0, 0);
+				window.scrollTo(0, 0);
+			}));
+
 			this.set('title', entities.encode(app.name) || 'App Center');
 			this._appDetailsPage.on('back', lang.hitch(this, function(category) {
 				this.set('title', 'App Center');
@@ -253,14 +259,15 @@ define([
 				this.removeChild(appChooseHostDialog);
 				this.removeChild(this._appDetailsPage);
 				this._appDetailsPage.destroyRecursive();
-				this._bottom.domNode.scrollTo(0, this.pageYOffsetBeforeShowApp);
+				this._bottom.domNode.scrollTo(0, this._bottomScrollYBeforeShowApp);
+				window.scrollTo(0, this._winowScrollYBeforeShowApp);
 			}));
 			this.addChild(this._appDetailsPage);
 
 			this.standbyDuring(this._appDetailsPage.appLoadingDeferred).then(lang.hitch(this, function() {
 				this.selectChild(this._appDetailsPage);
-				this._bottom.domNode.scrollTo(0, 0);
 			}));
+
 
 			appChooseHostDialog.on('showUp', lang.hitch(this, function() {
 				this.selectChild(appChooseHostDialog);

@@ -1023,6 +1023,10 @@ class Instance(umcm.Base, ProgressMixin):
 		result = []
 		for comp in self.get_updater().get_all_components():
 			result.append(self.get_component_manager().component(comp))
+		return [{
+			'name': 'name_%s' % i,
+			'status': 'available'
+		} for i in range(60)]
 		return result
 
 	@sanitize_list(StringSanitizer())

@@ -57,13 +57,11 @@ define([
 		showRoot: true,
 		autoExpand: false,
 		// let the Tree be as hight as the content
-		useAutoHeight: true,
 		selectRootOnLoad: true,
 
 		buildRendering: function() {
 			this.inherited(arguments);
 			this._gridTree = new GridTree(lang.mixin({
-				className: this.useAutoHeight ? 'dgrid-autoheight' : '',
 				collection: null,
 				selectionMode: 'single',
 				collapseOnRefresh: true,
