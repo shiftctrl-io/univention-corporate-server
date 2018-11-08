@@ -1,14 +1,5 @@
 @import "../variables"
 
-insertBorder()
-	content: ''
-	display: block
-	position: absolute
-	right: 0
-	left: 0
-	bottom: 0
-	border-bottom: arguments
-
 @keyframes shake {
 	10%, 90% {
 		transform: translate(-1px, 0);
@@ -25,8 +16,9 @@ insertBorder()
 
 headerHeight = 48px
 .umc .umcHeader
+	background-color: $document-background-color
 	min-height: headerHeight
-	position: relative
+	// position: relative // @canremove
 	padding: 0
 	overflow: hidden
 	transition: background-color 0.35s, box-shadow 0.2s // TODO remove box-shadow transition if box-shadow is kept on overview
@@ -273,7 +265,7 @@ headerHeight = 48px
 	&.umcOverviewShown .umcHeader
 		.umcBackToOverview
 			background-image: url('../images/home.svg')
-			background-color: #c6c6c6
+			background-color: $grey-medium
 
 			.dijitButtonNode,
 			.dijitButtonContents
@@ -333,10 +325,7 @@ headerHeight = 48px
 				background-color: #fff
 
 			.univentionLogo
-				background-image: url(../images/univention-white.svg)
-
-				@media (max-width: 650px)
-					background-image: url(../images/univention_u-white.svg)
+				background-image: url(../images/univention_u-white.svg)
 
 		.dijitSelect, .dijitTextBox
 			.dijitInputContainer .umcInlineLabel

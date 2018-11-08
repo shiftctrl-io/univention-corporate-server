@@ -130,7 +130,6 @@ define([
 				'class': 'scrollToTopFloatingButton'
 			});
 			var ink = put(scrollToTopFloatingButton.domNode, 'div.icon + div.ink');
-			var scrollNode = this._bottom.domNode;
 			scrollToTopFloatingButton.on('click', function(e) {
 				// show ink effect
 				var floatingButtonDiameter = domGeom.position(scrollToTopFloatingButton.domNode).w;
@@ -168,9 +167,9 @@ define([
 				new baseFx.Animation({
 					duration: 300,
 					easing: fxEasing.cubicOut,
-					curve: [scrollNode.scrollTop, 0],
+					curve: [dojo.docScroll().y, 0],
 					onAnimate: function(val) {
-						scrollNode.scrollTo(0, val);
+						window.scrollTo(0, val);
 					}
 				}).play();
 			});
@@ -181,23 +180,25 @@ define([
 
 			ContainerWidget.prototype.addChild.apply(this, [this._top]);
 			ContainerWidget.prototype.addChild.apply(this, [this._bottom]);
-			// ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButton]);
-			// ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButtonSpacer]);
+			ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButton]);
+			ContainerWidget.prototype.addChild.apply(this, [scrollToTopFloatingButtonSpacer]);
 
 			// redirect childrens to stack container
 			this.containerNode = this.__container.containerNode;
 
-			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function(evt) {
+			this.own(on(baseWindow.doc, 'scroll', lang.hitch(this, function(evt) {
 				if (!this.selected) {
 					return;
 				}
 
-				domClass.toggle(this.domNode, 'scrollIsNotAtTop', evt.target.scrollTop > 0);
-
 				// update scrollToTop Button visibility
-				var showScrollToTopButton = evt.target.scrollTop >= 300;
+				var showScrollToTopButton = dojo.docScroll().y >= 300;
 				domClass.toggle(scrollToTopFloatingButton.domNode, 'shown', showScrollToTopButton);
 				domClass.toggle(scrollToTopFloatingButtonSpacer.domNode, 'shown', showScrollToTopButton);
+			})));
+
+			this.own(on(this._bottom.domNode, 'scroll', lang.hitch(this, function(evt) {
+				domClass.toggle(this.domNode, 'scrollIsNotAtTop', evt.target.scrollTop > 0);
 			})));
 		},
 

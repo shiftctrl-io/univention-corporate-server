@@ -4,12 +4,27 @@
 
 @import "variables"
 
+.umcHeader
+	z-index: 2
+	material-shadow(1)
+	// border-bottom: $grey-medium
+	background-color: rgba(0, 0, 0, 0.02) // TODO remove
+	background-color: rgba(0, 0, 0, 0.009) // TODO remove
+	background-color: $grey-lightest
+
+@media (max-width: $sm-max)
+	.umcHeader
+		position: fixed
+		top: 0
+		left: 0
+		right: 0
+
+	.umcMainTabContainer
+		top: 48px
+
 @media (min-width: $md-min) and (min-height: 750px)
 	.umcHeader
-		z-index: 2
-		material-shadow(1)
-		background-color: rgba(0, 0, 0, 0.02)
-		background-color: rgba(0, 0, 0, 0.009)
+		position: relative
 
 	// scrollless: basis
 	#umcTopContainer.scrollless-appcenter-appcenter,
