@@ -51,6 +51,7 @@ import notifier.popen as popen
 from notifier import threads
 
 import univention.admin.uexceptions as udm_errors
+from univention.udm import UDM
 
 from .message import Response, Request, MIMETYPE_JSON
 from .client import Client, NoSocketError
@@ -343,6 +344,16 @@ class ProcessorBase(Base):
 					'keywords': list(set(module.keywords + [self.i18n._(keyword, translationId) for keyword in module.keywords])),
 					'version': module.version,
 				})
+		if self.user_dn:
+			user = UDM.machine().version(1).obj_by_dn(self.user_dn)
+			blacklist = user.module_blacklist
+			permitted_modules = []
+			for module in modules:
+				if module.get('id') not in blacklist:
+					permitted_modules.append(module)
+				elif '*' not in blacklist[module.get('id')] and module.get('flavor') not in blacklist[module.get('id')]:
+					permitted_modules.append(module)
+			modules = permitted_modules
 		CORE.info('Modules: %s' % (modules,))
 		res = Response(request)
 		res.body['modules'] = modules
