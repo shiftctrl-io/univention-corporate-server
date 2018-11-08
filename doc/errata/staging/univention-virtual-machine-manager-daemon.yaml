@@ -12,4 +12,5 @@ desc: |
  * Show a warning if the entered VNC password for a virtual machine 
    exceeds a certain length.
  * Add support for post-copy migration.
-bug: [47956,35761,22695,48106,47617]
+ * Fix file permissions of backup directory.
+bug: [47956,35761,22695,48106,47617,47741]
