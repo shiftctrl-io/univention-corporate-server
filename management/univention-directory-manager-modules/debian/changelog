@@ -1,3 +1,9 @@
+univention-directory-manager-modules (13.0.25-26~udmhttpapi) unstable; urgency=low
+
+  * Bug #12345: package UDM-HTTP-API client for UCS and non-UCS systems
+
+ -- Daniel Troeder <troeder@univention.de>  Fri, 09 Nov 2018 11:02:59 +0100
+
 univention-directory-manager-modules (13.0.25-26) unstable; urgency=medium
 
   * Bug #43129: Old value should have sane value, too
