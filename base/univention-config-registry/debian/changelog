@@ -1,3 +1,9 @@
+univention-config-registry (13.0.0-6) unstable; urgency=medium
+
+  * Bug #35239: Fix UCSV modules/scripts getting double registered
+
+ -- Jannik Ahlers <ahlers@univention.de>  Wed, 10 Oct 2018 12:23:24 +0200
+
 univention-config-registry (13.0.0-5) unstable; urgency=medium
 
   * Bug #47356: Relax trigger execution to "noawait"
