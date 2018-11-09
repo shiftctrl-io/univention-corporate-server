@@ -1,5 +1,6 @@
 @import "variables"
 
+// TODO @canremove
 .umcGrid .dojoxGridScrollbox
 	overflow-y: scroll
 	overflow-x: hidden
@@ -78,16 +79,9 @@ $umcGrid-edge-padding = 24px
 			height: 0px
 			visibility: hidden
 
-		.dijitDropDownButton
-			.dijitButtonContents
-				line-height: inherit
-
-				.dijitArrowButtonInner
-					display: none
-
 		.dijitButton,
 		.dijitDropDownButton
-			material-flat-button(dijitButton dijitDropDownButton)
+			material-flat-button()
 			.dijitIcon
 				display: none
 

@@ -679,6 +679,7 @@ define([
 				name: 'add',
 				label: _('Add'),
 				description: _addDescriptionText(),
+				'class': 'foobar',
 				iconClass: 'umcIconAdd',
 				isContextAction: false,
 				isStandardAction: true,

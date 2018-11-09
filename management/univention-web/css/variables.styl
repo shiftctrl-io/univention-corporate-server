@@ -64,12 +64,19 @@ $pane-background-color ?= $container-background-color					// Background color of
 $popup-background-color ?= $container-background-color					// Background for Dialog.   TODO: currently use for ColorPalette, maybe should change.
 
 
+$category-color-users    ?= #fac800
+$category-color-devices  ?= #dd4632
+$category-color-domain   ?= #146edc
+$category-color-system   ?= #a05adc
+$category-color-software ?= #50c80a
 
 // Buttons
 $button-border-color ?=  $focused-border-color								// Border for (stand-alone) buttons in normal, hovered, or active state
 $button-background-color ?= $unfocused-clickable-color					// Background color for (unhovered) buttons
-$button-hovered-background-color ?= rgba(0, 0, 0, 0.0784)	// Background color for hovered buttons
-$button-pressed-background-color ?= rgba(0, 0, 0, 0.16)				// Background color for active buttons
+$button-hovered-background-alpha ?= 0.0784
+$button-hovered-background-color ?= rgba(0, 0, 0, $button-hovered-background-alpha)
+$button-pressed-background-alpha ?= 0.16
+$button-pressed-background-color ?= rgba(0, 0, 0, $button-pressed-background-alpha)
 $button-border-radius ?= 2px												// Rounded corner radius for buttons (except in toolbar)
 $button-gradient-bottom-color ?= #c8c8c8
 $button-gradient-top-color ?= #e6e6e6
@@ -228,7 +235,7 @@ border-radius()
 	-moz-border-radius: arguments
 	border-radius: arguments
 
-
+// TODO @canremove . the browsers that need the prefix are under 1% global usage
 box-shadow()
 	-webkit-box-shadow: arguments
 	-moz-box-shadow: arguments
@@ -298,22 +305,28 @@ material-shadow(level)
 		box-shadow: none
 
 
-material-flat-button(buttonClasses=dijitButton)
+material-flat-button()
 	box-shadow: none
-	margin-left: 4px
-	margin-right: @margin-left
 
-	for ibuttonClass in buttonClasses
-		// make sure that buttons hover from transparent background to light translucent black
-		&:not(.{ibuttonClass}Hover) .dijitButtonNode
-			background-color: rgba(255, 255, 255, 0);
+	.dijitButtonNode
+		background-color: rgba(255, 255, 255, 0);
 
-		&.{ibuttonClass}Focused .dijitButtonNode
+	&^[-1..-1]Hover,
+	&^[-1..-1]Focused
+		.dijitButtonNode
 			background-color: $button-hovered-background-color
+	&^[-1..-1]Active
+		.dijitButtonNode
+			background-color: $button-pressed-background-color
 
 	.dijitButtonText
-		padding: 0 12px
+		padding: 0 8px
+	// margin-left: 4px
+	// margin-right: @margin-left
 
+material-outlined-button()
+	material-flat-button()
+	box-shadow: inset 0 0 0 1px $base-border-color !important
 
 
 icon-image(xoffset=0, yoffset=0, dirprefix="", filesuffix="", width=20px, height=20px)
@@ -483,4 +496,3 @@ clearfix(when=after) {
 		height: 0px
 	}
 }
-

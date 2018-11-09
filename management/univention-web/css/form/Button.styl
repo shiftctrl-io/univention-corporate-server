@@ -28,9 +28,6 @@
 
 @import "../variables"
 
-.umc .dijitButton.umcFlatButton
-	material-flat-button()
-
 .umc .dijitButton,
 .umc .dijitDropDownButton
 	margin: 8px
@@ -38,84 +35,39 @@
 	material-shadow(1)
 	border-radius: $button-border-radius
 
-.umc .dijitButtonNode
-	/* rules for dijit.form.*Button widgets and arrow nodes on ComboBox, Spinner etc. */
-	//transition-property: background-color
- 	//transition-duration: .3s
+	.dijitButtonNode
+		border: none
+		padding: 0px
+		// height: 36px
+		// line-height: 36px
+		color: $text-color
+		border-radius: $button-border-radius
+		background-color: white
+		transition: background-color 250ms
 
-.umc .dijitButton .dijitButtonNode,
-.umc .dijitDropDownButton .dijitButtonNode,
-.umc .dijitComboButton .dijitButtonNode,
-.umc .dijitToggleButton .dijitButtonNode
-	/* rules for the dijit.form.*Button widgets (see also ComboButton section below) */
-	border: none
-	padding: 0px
-	height: 36px
-	line-height: 36px
-	color: $text-color
-	border-radius: $button-border-radius
-	background-color: white
-	transition: background-color 250ms
+		.dijitButtonContents
+			line-height: 36px
 
-	//vertical-gradient-and-filter($button-gradient-top-color, $button-gradient-bottom-color)
+.umc
+	.dijitButtonNode,
+	.dijitSelect
+		.dijitArrowButtonInner
+			icon-image(-160, -20, "../")
 
-	//background-color: desaturate(darken($button-background-color, 10), 20)
+		.dijitLeftArrowButton .dijitArrowButtonInner
+			background-position: -200px -20px
 
-	// Alpha transparency layer to add gradient to above background color.
-	// Use CSS gradient with fallback to image for IE.
-	//background-image: url("images/buttonEnabled.png")
-	//background-repeat: repeat-x
-	//alpha-white-gradient((1 0px), (0 3px), (0.75 100%))
-	//_background-image: none	// IE6 can't handle background-color and background-image at once.
+		.dijitRightArrowButton .dijitArrowButtonInner
+			background-position: -220px -20px
 
-.umc .dijitButton .dijitButtonNode .dijitButtonContents
-	line-height: 36px
+		.dijitUpArrowButton .dijitArrowButtonInner
+			background-position: -180px -20px
 
-//.umc .dijitButton.dijitDefaultButton .dijitButtonNode
-//	vertical-gradient-and-filter($default-button-gradient-top-color, $default-button-gradient-bottom-color)
-//	border-color: $default-button-border-color
-//	.dijitButtonText
-//		color: $text-color-dark-background
-
-.umc .dijitComboButton .dijitArrowButton
-	border-left-width: 0
-	padding: 4px 2px 4px 2px	/* TODO: still needed? */
-
-/*arrow styles for down/up/left/right directions*/
-.umc .dijitArrowButtonInner
-	//width: 15px
-	///height: 15px
-	margin: 0 auto
-	//background-image:url("../" + $image-form-button-arrows)
-	//background-repeat:no-repeat
-	//background-position:-51px 53%
-	icon-image(-162, -20, "../", width: 16px)
-
-.umc .dijitLeftArrowButton .dijitArrowButtonInner
-	background-position: -202px -20px
-
-.umc .dijitRightArrowButton .dijitArrowButtonInner
-	background-position: -222px -20px
-
-.umc .dijitUpArrowButton .dijitArrowButtonInner
-	background-position: -182px -20px
-
-.umc .dijitDisabled .dijitArrowButtonInner
-	//background-position: 0 -160px
-
-.umc .dijitDisabled .dijitLeftArrowButton .dijitArrowButtonInner
-	//background-position: -240px 0
-
-.umc .dijitDisabled .dijitRightArrowButton .dijitArrowButtonInner
-	//background-position: -280px 0
-
-.umc .dijitDisabled .dijitUpArrowButton .dijitArrowButtonInner
-	//background-position: -160px 0
-
-.umc .dijitDisabled .dijitIcon,
-.umc .dijitDisabled .dijitArrowButtonInner,
-.umc .dijitDisabled .dijitButtonText
-	opacity: 0.5 !important
+.umc .dijitDisabled
+	.dijitIcon,
+	.dijitArrowButtonInner,
+	.dijitButtonText
+		opacity: 0.5 !important
 
 .umc .dijitButtonText
 	padding: 0 16px
@@ -132,8 +84,6 @@
 .umc .dijitComboButton .dijitDownArrowButtonHover,
 .umc .dijitToggleButtonHover .dijitButtonNode
 	background-color: $button-hovered-background-color
-	//color:$text-color
-	//transition-duration: .2s
 	.dijitArrowButtonInner
 		opacity: 0.66
 
@@ -167,28 +117,14 @@
 /* disabled status */
 .umc .dijitButtonDisabled,
 .umc .dijitDropDownButtonDisabled,
-.umc .dijitComboButtonDisabled,
-.umc .dijitToggleButtonDisabled
 	background-image: none
 	outline: none
 
-.umc .dijitButtonDisabled .dijitButtonNode,
-.umc .dijitDropDownButtonDisabled .dijitButtonNode,
-.umc .dijitComboButtonDisabled .dijitButtonNode,
-.umc .dijitToggleButtonDisabled .dijitButtonNode 
-	background-color: $disabled-background-color
-	//border: solid 1px $disabled-border-color
-	color: $disabled-text-color
-	//box-shadow: 0 0 0 rgba(0,0,0,0)
-
-	// Change the gradient from light to dark.
-	// Again using CSS gradient with fallback to image for IE.
-	background-image: url("images/buttonDisabled.png")
-	//alpha-white-gradient((1 0%), (0 40%))
-	_background-image: none	// IE6 can't handle background-color and background-image at once.
-
-.umc .dijitComboButtonDisabled .dijitArrowButton 
-	border-left-width: 0
+	.dijitButtonDisabled
+	.dijitDropDownButtonDisabled
+		.dijitButtonNode
+			background-color: $disabled-background-color
+			color: $disabled-text-color
 
 /* for ComboButton */
 .umc table.dijitComboButton
@@ -199,3 +135,29 @@
 
 .umc .dijitComboButton .dijitArrowButton
 	border-radius: 0 $button-border-radius $button-border-radius 0
+
+.umc .dijitDropDownButton
+	.dijitButtonText
+		padding-right: 8px
+	.dijitArrowButtonInner
+		margin-right: 12px
+
+.umc .dijitButton.umcFlatButton
+	material-flat-button()
+
+.umc .dijitButton.umcOutlinedButton
+	material-outlined-button()
+
+for category-color in users devices domain system software
+	.umc .umcModule.color-{category-color}
+		.umcColoredButton
+			&.dijitButtonHover
+			&.dijitDropDownButtonHover
+			&.dijitButtonFocused
+			&.dijitDropDownButtonFocused
+				.dijitButtonNode
+					background-color: rgba(lookup('$category-color-' + category-color), $button-hovered-background-alpha) !important
+			&.dijitButtonActive
+			&.dijitDropDownButtonActive
+				.dijitButtonNode
+					background-color: rgba(lookup('$category-color-' + category-color), $button-pressed-background-alpha) !important

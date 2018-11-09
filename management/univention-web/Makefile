@@ -110,9 +110,10 @@ TMP_FONT_FILES := $(addprefix $(TMP_THEME_DIR)/fonts/, $(FONT_FILES))
 # image files
 IMG_FILES := $(shell find css -name "*.svg" -o -name "*.png" -o -name "*.gif")
 WHITE_IMG_FILES := $(addprefix css/images/,icons-white.svg icons-small-white.svg univention-white.svg univention_u-white.svg home-white.svg)
+COLORED_IMG_FILES := $(addprefix css/images/,icons-users.svg icons-devices.svg icons-domain.svg icons-system.svg icons-software.svg)
 SVG_IMG_FILES := $(shell find css -name "*.svg")
 PNG_IMG_FILES := $(filter-out css/images/login_logo.png,$(SVG_IMG_FILES:.svg=.png))
-ALL_IMG_FILES := $(IMG_FILES) $(WHITE_IMG_FILES) $(PNG_IMG_FILES)
+ALL_IMG_FILES := $(IMG_FILES) $(WHITE_IMG_FILES) $(COLORED_IMG_FILES) $(PNG_IMG_FILES)
 TMP_IMG_FILES := $(patsubst css/%,$(TMP_THEME_DIR)/%,$(ALL_IMG_FILES))
 
 tmp-build: $(TMP_JS_FILES) $(TMP_DOJO_PACKAGES) $(TMP_I18N_FILES) $(TMP_DIR)/umc/package.json $(TMP_DIR)/umc/_all.js $(TMP_DIR)/login/main.js $(TMP_DIR)/config.js $(TMP_THEME_DIR)/umc.css $(TMP_THEME_DIR)/bootstrap.css $(TMP_FONT_FILES) $(TMP_IMG_FILES)
@@ -193,6 +194,16 @@ $(TMP_FONT_FILES): roboto.zip
 # automatically create SVG files with white icons
 %-white.svg: %.svg
 	sed 's/\#282828/\#ffffff/g' $< > $@
+%-users.svg: %.svg
+	sed 's/\#282828/\#fac800/g' $< > $@
+%-devices.svg: %.svg
+	sed 's/\#282828/\#ff4632/g' $< > $@
+%-domain.svg: %.svg
+	sed 's/\#282828/\#146edc/g' $< > $@
+%-system.svg: %.svg
+	sed 's/\#282828/\#a05adc/g' $< > $@
+%-software.svg: %.svg
+	sed 's/\#282828/\#50c80a/g' $< > $@
 
 %.png: %.svg
 	convert -background transparent "$<" "$@"

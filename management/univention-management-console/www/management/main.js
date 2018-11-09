@@ -980,6 +980,16 @@ define([
 		},
 
 		_updateScrolllessUMC: function(oldModule, newModule) {
+			// TODO cleanup
+			var categoryNames = this.getCategories().map(function(c) {
+				return lang.replace('category-color-{0}', [c.id]);
+			});
+			domClass.remove(this._topContainer.domNode, categoryNames);
+			if (newModule.categoryColor) {
+				domClass.add(this._topContainer.domNode, lang.replace('category-color-{0}', [newModule.categoryColor]));
+			}
+
+
 			if (oldModule) {
 				var oldModuleName = oldModule.isOverview ? 'overview' : oldModule.moduleID;
 				if (oldModule.moduleFlavor) {
@@ -1668,6 +1678,7 @@ define([
 			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitTabChecked', [defaultClasses, module_flavor_css]), cssProperties);
 			// color action buttons in an dgrid
 			styles.insertCssRule(lang.replace('.umcModule.color-{0} .umcGridHeader .dijitButtonText', [tab.categoryColor]), lang.replace('color: {0}', [color]));
+			styles.insertCssRule(lang.replace('.umcModule.color-{0} .umcGridHeader .dijitDropDownButton .dijitArrowButtonInner', [tab.categoryColor]), lang.replace('background-image: url(/univention/js/dijit/themes/umc/images/icons-{0}.svg)', [tab.categoryColor]));
 			// color scroll to top floating button
 			styles.insertCssRule(lang.replace('.umcModule.color-{0} .scrollToTopFloatingButton', [tab.categoryColor]), lang.replace('background-color: {0}', [color]));
 		},

@@ -729,7 +729,10 @@ define([
 
 				if (iaction.isStandardAction) {
 					// add action to the context toolbar
-					var btn = new Button(lang.mixin(props, getCallback(''), { iconClass: props.iconClass || 'umcIconNoIcon' }));
+					var btn = new Button(lang.mixin(props, getCallback(''), {
+						iconClass: props.iconClass || 'umcIconNoIcon',
+						'class': 'umcColoredButton'
+					}));
 					if (iaction.description) {
 						try {
 						var idescription = typeof iaction.description === "function" ? iaction.description(undefined) : iaction.description;
@@ -760,8 +763,8 @@ define([
 			// add more menu to toolbar
 			if (this._contextActionsMenu.getChildren().length) {
 				this._contextActionsToolbar.addChild(new _DropDownButton({
-					baseClass: _DropDownButton.prototype.baseClass + ' umcGridMoreMenu',
 					iconClass: 'umcIconNoIcon',
+					'class': 'umcColoredButton',
 					label: _('more'),
 					dropDown: this._contextActionsMenu
 				}));
@@ -795,6 +798,7 @@ define([
 						iaction.callback(this.getSelectedIDs(), this.getSelectedItems());
 					});
 				}
+				jaction.class = jaction.class ? jaction.class += ' umcColoredButton' : 'umcColoredButton';
 				return jaction;
 			}, this);
 
