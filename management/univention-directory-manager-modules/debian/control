@@ -89,6 +89,7 @@ Description: HTTP-API for the Univention Directory Manager modules
 Package: python-univention-directory-manager-http-api-client
 Architecture: all
 Depends: ${misc:Depends},
+ univention-directory-manager-http-api (= ${binary:Version}),
  python-bravado,
  python-bravado-core,
  python-swagger-spec-validator,
