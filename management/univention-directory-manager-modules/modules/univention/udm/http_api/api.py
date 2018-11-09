@@ -1,8 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
+import re
 import logging
 import urllib
 import urlparse
+import datetime
+from six import string_types
 from ldap.filter import filter_format
 from flask import Blueprint, Flask, g
 from flask_httpauth import HTTPBasicAuth
@@ -30,6 +33,7 @@ UDM_API_VERSION = 1
 HTTP_API_VERSION = '{}.0'.format(UDM_API_VERSION)
 
 _url2module = {}  # type: Dict[Text, Text]
+_uri_regex = re.compile(r'^(https{0,1}?)://(.+?)/udm/(\w+?)/(\w+?)/(.*)')
 
 # https://swagger.io/docs/specification/2-0/authentication/
 authorizations = {
@@ -144,7 +148,6 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 			args = parser.parse_args()
 			logger.debug('UdmResourceList.get() args=%r', args)
 			search_kwargs = dict((k, v) for k, v in args.items() if v and v.strip())  # remove non-empty values
-			logger.debug('UdmResourceList.get() search_kwargs=%r', search_kwargs)
 			mod = g.udm.get(self._udm_object_type)
 			identifying_property = mod.meta.identifying_property
 			res = []
@@ -183,13 +186,13 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 				msg = 'ID of object is required in "props.{}".'.format(identifying_property)
 				logger.error('400: %s', msg)
 				abort(400, msg)
+			logger.info('Creating %r object with args %r...', self._udm_object_type, args)
 			obj = mod.new()  # type: BaseObjectTV
 			obj.options = args.get('options') or []
 			obj.policies = args.get('policies') or []
 			obj.position = args.get('position') or mod._get_default_object_positions()[0]
 			for k, v in args['props'].items():
 				setattr(obj.props, k, v)
-			logger.info('Creating {!r}...'.format(obj))
 			try:
 				obj.save().reload()
 			except UdmError as exc:
@@ -232,36 +235,42 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 			"""Update a {} object given its id."""
-			logger.debug('UdmResourceList.put() id=%r self._udm_object_type=%r', id, self._udm_object_type)
-			obj = search_single_object(g.udm, self._udm_object_type, id)
+			logger.debug('UdmResourceList.put(id=%r) self._udm_object_type=%r', id, self._udm_object_type)
 			parser = reqparse.RequestParser()
 			parser.add_argument('options', type=list, help='Options of object [optional].')
 			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
 			parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
 			parser.add_argument('props', type=dict, help='Properties of object [optional].')
+			# TODO: superordinate
 			args = parser.parse_args()
-			logger.info('Updating %r...', obj)
+			obj = search_single_object(g.udm, self._udm_object_type, id)
+			logger.info('Updating %r with args %r...', obj, args)
 			changed = False
 			for udm_attr in ('options', 'policies', 'position'):
-				logger.debug('%s: %r', udm_attr, args.get(udm_attr))
 				if args.get(udm_attr) is not None:
-					# TODO
+					logger.debug(
+						'(%s) Setting %s to %r (old_value=%r).', id, udm_attr, args[udm_attr], getattr(obj, udm_attr))
 					setattr(obj, udm_attr, args[udm_attr])
 					changed = True
+			if obj.policies and isinstance(obj.policies, list):
+				obj.policies = [
+					url2dn(g.udm, url) for url in obj.policies
+					if isinstance(url, string_types) and _uri_regex.match(url)
+				]
+
 			for prop, value in (args.get('props') or {}).iteritems():
-				logger.debug('props.%s: %r', prop, value)
+				# logger.debug('*** props.%s: %r', prop, value)
 				if getattr(obj.props, prop) == '' and value is None:
 					# Ignore values we set to None earlier (instead of ''), so they
 					# wouldn't be shown in the API.
 					continue
-				obj_prop = getattr(obj.props, prop)
+				old_value = getattr(obj.props, prop)
 				try:
 					encoder = obj.props._encoders[prop]  # type: BaseEncoderTV
 				except KeyError:
-					# logger.debug('%r: no encoder', prop)
 					pass
 				else:
-					# logger.debug('encoder=%r', encoder)
+					# logger.debug('(%s) encoder=%r encoder.type_hint=%r', id, encoder, encoder.type_hint)
 					if hasattr(encoder.type_hint, '__iter__'):
 						# nested object or list
 						prop_type, content_desc = encoder.type_hint
@@ -270,24 +279,29 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 						# 	type(prop_type), prop_type, type(content_desc), content_desc)
 						is_list = prop_type in (list, 'ObjList')
 						if isinstance(content_desc, dict):
-							# logger.debug('content_desc is dict')
 							pass
 						elif content_desc == 'obj':
+							# Obj2UrlField
 							if is_list:
 								value = [url2dn(g.udm, url) for url in value]
 							else:
 								value = url2dn(g.udm, value)
 						else:
-							# logger.debug('content_desc is not dict or obj')
 							pass
-				if obj_prop != value:
+					elif encoder.type_hint == 'obj':
+						# Obj2UrlField
+						value = url2dn(g.udm, value)
+					elif encoder.type_hint == datetime.date:
+						value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+				if old_value != value:
+					logger.debug('(%s) Setting props.%s to %r (old_value=%r).', id, prop, value, old_value)
 					setattr(obj.props, prop, value)
 					changed = True
 			if changed:
 				try:
 					obj.save().reload()
 				except UdmError as exc:
-					logger.error('400: %s', exc)
+					logger.error('400: (%s) %s', id, exc)
 					abort(400, str(exc))
 			else:
 				logger.info('No change to %r.', obj)

@@ -211,7 +211,7 @@ def get_model(module_name, udm_api_version, api):
 			encoder = encoders[prop]  # type: BaseEncoderTV
 			# logger.debug('****** encoder for prop={!r} is {!r} encoder.type_hint={!r}'.format(
 			# 	prop, encoder, getattr(encoder, 'type_hint')))
-			if hasattr(encoder.type_hint, '__iter__'):
+			if hasattr(encoder.type_hint, '__iter__') and not isinstance(encoder.type_hint, string_types):
 				# nested object or list
 				prop_type, content_desc = encoder.type_hint
 				# logger.debug('****** prop={!r} prop_type={!r} content_desc={!r}'.format(prop, prop_type, content_desc))

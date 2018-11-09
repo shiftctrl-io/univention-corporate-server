@@ -33,16 +33,18 @@ Base classes for (simplified) UDM_HTTP modules and objects.
 from __future__ import absolute_import, unicode_literals
 import re
 import sys
+import copy
+import datetime
 from collections import namedtuple
 import urllib
 import urlparse
 from six import string_types
 from bravado.exception import HTTPNotFound, HTTPUnauthorized
-from .exceptions import ConnectionError, NoObject, MultipleObjects
+from .exceptions import ConnectionError, DeletedError, NoObject, NotYetSavedError
 from .base import BaseModule, BaseModuleMetadata, BaseObject, BaseObjectProperties
 
 try:
-	from typing import Any, Dict, Optional, Text
+	from typing import Any, Dict, Optional, Text, Union
 except ImportError:
 	pass
 
@@ -50,9 +52,32 @@ except ImportError:
 LdapMapping = namedtuple('LdapMapping', ('ldap2udm', 'udm2ldap'))
 
 
+def serialize_obj(obj):
+	"""Recursive JSON compatible serialization."""
+	if any(isinstance(obj, x) for x in (bool, float, int, long, string_types)):
+		# non-iterable base type
+		return obj
+	elif isinstance(obj, datetime.date):
+		return obj.strftime('%Y-%m-%d')
+	elif isinstance(obj, BaseHttpObject):
+		return obj._baravo_object['uri']
+	elif isinstance(obj, dict):
+		res = {}
+		for k, v in obj.iteritems():
+			if str(k).startswith('_'):
+				continue
+			res[k] = serialize_obj(v)
+		return res
+	elif any(isinstance(obj, x) for x in (list, tuple)):
+		return [serialize_obj(v) for v in obj]
+	else:
+		raise ValueError('Dont know how to handle type {!r} of object {!r}.'.format(type(obj), obj))
+
+
 class BaseHttpObjectProperties(BaseObjectProperties):
 	"""Container for UDM properties."""
-	pass
+	def _to_dict(self):  # type: () -> Dict[Text, Any]
+		return dict((k, serialize_obj(v)) for k, v in self.__dict__.iteritems() if not str(k).startswith('_'))
 
 
 class BaseHttpObject(BaseObject):
@@ -89,7 +114,10 @@ class BaseHttpObject(BaseObject):
 		:py:meth:`BaseHttpModule.search()`.
 		"""
 		super(BaseHttpObject, self).__init__()
+		self.id = ''
 		self._baravo_object = None  # type: Dict[Text, Any]
+		self._fresh = True
+		self._deleted = False
 
 	def reload(self):
 		"""
@@ -98,7 +126,14 @@ class BaseHttpObject(BaseObject):
 		:return: self
 		:rtype: BaseHttpObject
 		"""
-		raise NotImplementedError()
+		if self._deleted:
+			raise DeletedError('{} has been deleted.'.format(self), dn=self.dn, module_name=self._udm_module.name)
+		if not self.dn or not self._baravo_object:
+			raise NotYetSavedError(module_name=self._udm_module.name)
+		self._baravo_object = self._udm_module._get_bravado_object(self.id)
+		self._copy_from_bravado_obj(self._udm_module._uri2obj_cache)
+		self._udm_module._uri2obj_cache.clear()
+		return self
 
 	def save(self):
 		"""
@@ -108,7 +143,38 @@ class BaseHttpObject(BaseObject):
 		:rtype: BaseHttpObject
 		:raises MoveError: when a move operation fails
 		"""
-		raise NotImplementedError()
+		if self._deleted:
+			raise DeletedError('{} has been deleted.'.format(self), dn=self.dn, module_name=self._udm_module.name)
+		if not self._fresh:
+			print('WARNING: Saving stale UDM object instance')
+		diff_dict = {}
+		old_obj = serialize_obj(self._baravo_object)
+		new_obj = self.to_dict()
+		for k, v in new_obj.iteritems():
+			if k in ('id', 'dn'):
+				continue
+			elif k == 'props':
+				for prop, value in v.iteritems():
+					if value != old_obj['props'][prop]:
+						diff_dict.setdefault('props', {})[prop] = value
+			else:
+				if v != old_obj[k]:
+					if k == 'options':
+						# TODO: contact bravado project
+						print('WARN: there is a bug in bravado, "options" will not be sent correctly.')
+					diff_dict[k] = v
+
+		mod = self._udm_module.connection.users_user
+		if self.id:
+			new_baravo_obj = mod.modify(id=self.id, payload=diff_dict).result()
+		else:
+			new_baravo_obj = mod.create(payload=diff_dict).result()
+		self.id = new_baravo_obj['id']
+		self.dn = new_baravo_obj['dn']
+		self._fresh = False
+		if self._udm_module.meta.auto_reload:
+			self.reload()
+		return self
 
 	def delete(self):
 		"""
@@ -116,31 +182,46 @@ class BaseHttpObject(BaseObject):
 
 		:return: None
 		"""
-		raise NotImplementedError()
+		if self._deleted:
+			print('WARNING {} has already been deleted'.format(self))
+			return
+		if not self.dn or not self._baravo_object:
+			raise NotYetSavedError()
+		self._udm_module.connection.users_user.delete(id=self.id).result()
+		self._baravo_object = None
+		self._deleted = True
 
-	def _uri2obj(self, uri, uri2obj_cache):  # type: (Text, Dict[Text, BaseHttpObject]) -> object
+	def _uri2obj(self, uri, uri2obj_cache):  # type: (Text, Dict[Text, BaseHttpObject]) -> Union[object, None]
 		"""
 		Convert a URI to a BaseHttpObject instance.
 
 		:param str uri: a URI
 		:param dict uri2obj_cache: cache of URL 2 object conversions (to
 			prevent infinite recursion)
-		:return: a BaseHttpObject
-		:rtype: BaseHttpObject
+		:return: a BaseHttpObject or None if there is none at `uri`
+		:rtype: BaseHttpObject or None
 		"""
 		# TODO: use lazy object loading
 		if uri not in uri2obj_cache:
 			path = urlparse.urlsplit(uri).path
-			resource_uri, _sep, obj_id_enc = path.rpartition('/')
+			path_split = path.strip('/').split('/')
+			module_name = '-'.join(path_split[1:3])
+			obj_id_enc = '/'.join(path_split[3:])
 			obj_id = urllib.unquote(obj_id_enc)
-			module_name = resource_uri.replace('/udm', '').strip('/').replace('/', '-')
 			try:
 				bravado_mod = getattr(self._udm_module.connection, module_name)
 			except AttributeError:
 				print('ERROR: Swagger client does not know module {!r}.'.format(module_name))
 				uri2obj_cache[uri] = uri
 				return uri
-			bravado_obj = bravado_mod.get(id=obj_id).result()
+			try:
+				bravado_obj = bravado_mod.get(id=obj_id).result()
+			except HTTPNotFound:
+				# TODO: fix saml/serviceprovider resource in API server (or UDM?)
+				if module_name != 'saml-serviceprovider':
+					print('404 (Not Found) when loading {!r} object with ID {!r} from URI {!r}.'.format(
+						module_name, obj_id, uri))
+				return None
 			udm_http_mod = BaseHttpModule(module_name, self._udm_module.connection, self._udm_module.meta.used_api_version)
 			res = udm_http_mod._load_obj(obj_id, None, bravado_obj, uri2obj_cache)
 			uri2obj_cache[uri] = res
@@ -155,9 +236,10 @@ class BaseHttpObject(BaseObject):
 			prevent infinite recursion)
 		:return: None
 		"""
+		self.id = self._baravo_object['id']
 		self.dn = self._baravo_object['dn']
-		self.options = self._baravo_object['options']
-		self.policies = self._baravo_object['policies']
+		self.options = copy.deepcopy(self._baravo_object['options'])
+		self.policies = copy.deepcopy(self._baravo_object['policies'])
 		self.props = self.udm_prop_class(self)
 		for k, v in self._baravo_object['props'].items():
 			if isinstance(v, string_types) and self._uri_regex.match(v):
@@ -168,23 +250,24 @@ class BaseHttpObject(BaseObject):
 					all(self._uri_regex.match(x) for x in v)
 			):
 				v = [self._uri2obj(x, uri2obj_cache) for x in v]
+				v = [x for x in v if x]
 			setattr(self.props, k, v)
-		self.superordinate = self._baravo_object['superordinate']
+		self.superordinate = self._baravo_object['superordinate']  # type: Text
 		if self.superordinate:
 			self.superordinate = self._uri2obj(self.superordinate, uri2obj_cache)
 		self.position = self._baravo_object['position']
 		self._fresh = True
 
-	# def _copy_to_bravado_obj(self):
-	# 	"""
-	# 	Copy UDM property values from `props` container to low-level UDM
-	# 	object.
-	#
-	# 	:return: None
-	# 	"""
-	# 	self._orig_udm_object.options = self.options
-	# 	self._orig_udm_object.policies = self.policies
-	# 	self._orig_udm_object.position.setDn(self.position)
+	def to_dict(self):  # type: () -> Dict[Text, Any]
+		return {
+			'id': self.id,
+			'dn': self.dn,
+			'options': self.options,
+			'policies': serialize_obj(self.policies),
+			'position': self.position,
+			'props': self.props._to_dict(),
+			'superordinate': self.superordinate,
+		}
 
 
 class BaseHttpModuleMetadata(BaseModuleMetadata):
@@ -263,9 +346,6 @@ class BaseHttpModule(BaseModule):
 		super(BaseHttpModule, self).__init__(name, connection, api_version)
 		self._mod = getattr(self.connection, name)
 
-	# def __repr__(self):
-	# 	return '{}({!r})'.format(self.__class__.__name__, self.name)
-
 	def new(self, superordinate=None):
 		"""
 		Create a new, unsaved BaseHttpObject object.
@@ -321,7 +401,10 @@ class BaseHttpModule(BaseModule):
 		:return: iterator of BaseHttpObject objects
 		:rtype: Iterator(BaseHttpObject)
 		"""
-		raise NotImplementedError()
+		objs = self._mod.list(_request_options={'headers': {'filter': filter_s, 'base': base, 'scope': scope}}).result()
+		for obj in objs:
+			yield self._load_obj(obj['id'], baravo_object=obj, uri2obj_cache=self._uri2obj_cache)
+		self._uri2obj_cache.clear()
 
 	def _get_bravado_object(self, id, superordinate=None):  # type: (Text, Optional[Text]) -> object
 		"""
