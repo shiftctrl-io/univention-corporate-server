@@ -130,15 +130,12 @@ class UDM_HTTP(UDM):
 		:rtype: UDM
 		:raises ConnectionError: Invalid credentials, server down, etc.
 		"""
-		print('*** credentials() identity={!r} password={!r} server={!r} port={!r}'.format(
-			identity, password, server, port))
 		http_client = RequestsClient()
 		port = port or 80  # TODO: 443
 		scheme = 'http'  # TODO: https
 		path = '/udm/swagger.json'
 		swagger_spec_url = '{}://{}:{}{}'.format(scheme, server, port, path)
 		http_client.set_basic_auth(server, identity, password)
-		print('*** connecting to {!r}'.format(swagger_spec_url))
 		config = {'use_models': False, 'include_missing_properties': False}
 		try:
 			swagger_client = SwaggerClient.from_url(swagger_spec_url, http_client=http_client, config=config)
