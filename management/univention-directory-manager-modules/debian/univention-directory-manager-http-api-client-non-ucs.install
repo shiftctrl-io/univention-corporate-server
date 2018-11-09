@@ -1,0 +1,7 @@
+modules/univention/udm/base.py usr/share/pyshared/univention/udm/
+modules/univention/udm/exceptions.py usr/share/pyshared/univention/udm/
+modules/univention/udm/plugins.py usr/share/pyshared/univention/udm/
+modules/univention/udm/udm.py usr/share/pyshared/univention/udm/
+modules/univention/udm/udm_http.py usr/share/pyshared/univention/udm/
+modules/univention/udm/base_http.py usr/share/pyshared/univention/udm/
+contrib/swagger_parser-1.0.1.tar.bz2 usr/share/univention-directory-manager-http-api-client/

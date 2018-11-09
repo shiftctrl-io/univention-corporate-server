@@ -15,7 +15,16 @@ modules/univention/admin/handlers/computers/*.py usr/share/pyshared/univention/a
 modules/univention/admin/handlers/kerberos/*.py usr/share/pyshared/univention/admin/handlers/kerberos/
 modules/univention/admin/syntax.d/*.py usr/share/pyshared/univention/admin/syntax.d/
 modules/univention/admin/hooks.d/*.py usr/share/pyshared/univention/admin/hooks.d/
-modules/univention/udm/*.py usr/share/pyshared/univention/udm/
+modules/univention/udm/base.py usr/share/pyshared/univention/udm/
+modules/univention/udm/binary_props.py usr/share/pyshared/univention/udm/
+modules/univention/udm/connections.py usr/share/pyshared/univention/udm/
+modules/univention/udm/encoders.py usr/share/pyshared/univention/udm/
+modules/univention/udm/exceptions.py usr/share/pyshared/univention/udm/
+modules/univention/udm/helpers.py usr/share/pyshared/univention/udm/
+modules/univention/udm/__init__.py usr/share/pyshared/univention/udm/
+modules/univention/udm/plugins.py usr/share/pyshared/univention/udm/
+modules/univention/udm/udm.py usr/share/pyshared/univention/udm/
+modules/univention/udm/utils.py usr/share/pyshared/univention/udm/
 modules/univention/udm/modules/ usr/share/pyshared/univention/udm/
 python-lib/*.py usr/share/pyshared/univention/lib
 listener/*.py usr/lib/univention-directory-listener/system/

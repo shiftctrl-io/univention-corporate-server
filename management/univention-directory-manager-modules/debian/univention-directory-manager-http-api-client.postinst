@@ -31,25 +31,9 @@
 
 #DEBHELPER#
 
-SERVICE=univention-directory-manager-http-api
-
-# TODO: package flask_restplus as DEB
-if ! [ -a /usr/local/lib/python2.7/dist-packages/flask_restplus ]; then
-	tar xj -C / -f /usr/share/univention-directory-manager-http-api/flask-restplus-0.12.2.dev0.linux-x86_64.tar.bz2
+# TODO: package swagger-parser as DEB
+if ! [ -a /usr/local/lib/python2.7/dist-packages/swagger_parser ]; then
+	tar xj -C / -f /usr/share/univention-directory-manager-http-api-client/swagger_parser-1.0.1.tar.bz2
 fi
-
-systemctl daemon-reload
-
-if [ "$1" = "configure" ] && [ -z "$2" ]; then
-	echo "Enabling service $SERVICE..."
-	deb-systemd-invoke enable "$SERVICE.service"
-
-	a2enmod proxy_http
-	a2ensite univention-directory-manager-http-api.conf
-	deb-systemd-invoke reload apache2.service
-fi
-
-echo "Restarting $SERVICE..."
-deb-systemd-invoke restart "$SERVICE.service"
 
 exit 0

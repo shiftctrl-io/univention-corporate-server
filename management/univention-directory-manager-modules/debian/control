@@ -75,9 +75,46 @@ Depends: ${misc:Depends},
  python-flask-httpauth,
  python-jsonschema,
  gunicorn (>=19.6.0),
+ python-aniso8601,
+ python-tz,
  python-setproctitle,
 Description: HTTP-API for the Univention Directory Manager modules
  This package contains a HTTP-API service to manage UCS UDM objects.
+ .
+ It is part of Univention Corporate Server (UCS), an
+ integrated, directory driven solution for managing
+ corporate environments. For more information about UCS,
+ refer to: http://www.univention.de/
+
+Package: python-univention-directory-manager-http-api-client
+Architecture: all
+Depends: ${misc:Depends},
+ python-bravado,
+ python-bravado-core,
+ python-swagger-spec-validator,
+ python-jsonref,
+ python-typing,
+Conflicts: python-univention-directory-manager-http-api-client-non-ucs
+Description: Python client for the UDM HTTP-API
+ This package contains a HTTP-API client that implements the simple UDM API.
+ .
+ It is part of Univention Corporate Server (UCS), an
+ integrated, directory driven solution for managing
+ corporate environments. For more information about UCS,
+ refer to: http://www.univention.de/
+
+Package: python-univention-directory-manager-http-api-client-non-ucs
+Architecture: all
+Depends: ${misc:Depends},
+ python-bravado,
+ python-bravado-core,
+ python-swagger-spec-validator,
+ python-jsonref,
+ python-typing,
+Conflicts: python-univention-directory-manager-http-api-client
+Description: Python client for the UDM HTTP-API for non-UCS systems
+ This package contains a HTTP-API client that implements the simple UDM API
+ and is intended to be installed on non-UCS systems.
  .
  It is part of Univention Corporate Server (UCS), an
  integrated, directory driven solution for managing
