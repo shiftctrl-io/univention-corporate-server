@@ -38,7 +38,7 @@ def setup_logging(app):  # type: (flask.app.Flask) -> logging.Logger
 
 
 def udm_module_name2resource_name(udm_module_name):  # type: (Text) -> Text
-	return udm_module_name.replace('/', '-')
+	return udm_module_name.replace('/', '_')
 
 
 def resource_name2endpoint(resource_name):  # type: (Text) -> Text

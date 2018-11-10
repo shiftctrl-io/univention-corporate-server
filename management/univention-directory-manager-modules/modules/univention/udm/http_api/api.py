@@ -328,7 +328,7 @@ for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomp
 	# 	logger.info('*** Skipping %r...', udm_object_type)
 	# 	continue
 	ns = Namespace(
-		udm_object_type.replace('/', '-'),
+		udm_object_type.replace('/', '_'),
 		description='{} related operations'.format(udm_object_type)
 	)
 	try:
@@ -336,7 +336,7 @@ for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomp
 	except NoSuperordinate as exc:
 		logger.warn(exc)
 		continue
-	ns_model = ns.model(udm_object_type.replace('/', '-'), model)
+	ns_model = ns.model(udm_object_type.replace('/', '_'), model)
 	api.add_namespace(ns, path='/{}'.format(udm_object_type))
 	create_resource(udm_object_type, ns, ns_model)
 	_url2module['{}/{}'.format(blueprint.url_prefix, api.get_ns_path(ns).strip('/'))] = udm_object_type

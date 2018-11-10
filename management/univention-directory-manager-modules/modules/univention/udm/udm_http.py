@@ -180,9 +180,7 @@ class UDM_HTTP(UDM):
 		:return: object of a subclass of :py:class:`BaseHttpModule`
 		:rtype: BaseHttpModule
 		"""
-		if '/' in name:
-			name = name.replace('/', '-')
-		if not hasattr(self.connection, name):
+		if not hasattr(self.connection, name.replace('/', '_')):
 			raise UnknownModuleType('Unknown module: {!r}.'.format(name), module_name=name)
 
 		return BaseHttpModule(name, self.connection, self.api_version)

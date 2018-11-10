@@ -205,11 +205,11 @@ class BaseHttpObject(BaseObject):
 		if uri not in uri2obj_cache:
 			path = urlparse.urlsplit(uri).path
 			path_split = path.strip('/').split('/')
-			module_name = '-'.join(path_split[1:3])
+			module_name = '/'.join(path_split[1:3])
 			obj_id_enc = '/'.join(path_split[3:])
 			obj_id = urllib.unquote(obj_id_enc)
 			try:
-				bravado_mod = getattr(self._udm_module.connection, module_name)
+				bravado_mod = getattr(self._udm_module.connection, module_name.replace('/', '_'))
 			except AttributeError:
 				print('ERROR: Swagger client does not know module {!r}.'.format(module_name))
 				uri2obj_cache[uri] = uri
@@ -218,7 +218,7 @@ class BaseHttpObject(BaseObject):
 				bravado_obj = bravado_mod.get(id=obj_id).result()
 			except HTTPNotFound:
 				# TODO: fix saml/serviceprovider resource in API server (or UDM?)
-				if module_name != 'saml-serviceprovider':
+				if module_name != 'saml/serviceprovider':
 					print('404 (Not Found) when loading {!r} object with ID {!r} from URI {!r}.'.format(
 						module_name, obj_id, uri))
 				return None
@@ -344,7 +344,7 @@ class BaseHttpModule(BaseModule):
 
 	def __init__(self, name, connection, api_version):
 		super(BaseHttpModule, self).__init__(name, connection, api_version)
-		self._mod = getattr(self.connection, name)
+		self._mod = getattr(self.connection, name.replace('/', '_'))
 
 	def new(self, superordinate=None):
 		"""
