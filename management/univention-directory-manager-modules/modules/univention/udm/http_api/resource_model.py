@@ -10,7 +10,7 @@ from ..udm import UDM
 from ..modules.generic import GenericObject, GenericObjectProperties
 from ..encoders import _classify_name, DnPropertyEncoder
 from ..exceptions import NoObject, NoSuperordinate, UnknownModuleType
-from .utils import resource_name2endpoint, udm_module_name2endpoint
+from .utils import get_identifying_property, udm_module_name2endpoint
 
 try:
 	from typing import Any, Dict, List, Optional, Text, TypeVar, Union
@@ -115,7 +115,7 @@ class Obj2UrlField(fields.Url):
 	def obj2uri(self, obj):  # type: (GenericObjectTV) -> Text
 		assert isinstance(obj, GenericObject), '"obj" should be of (sub)type GenericObject, but is {!r}.'.format(type(obj))
 
-		identifying_property = obj._udm_module.meta.identifying_property
+		_idl, identifying_property = get_identifying_property(obj._udm_module)
 		obj_id = getattr(obj.props, identifying_property)
 		udm_module_name = obj._udm_module.name
 		self.endpoint = udm_module_name2endpoint(udm_module_name)
@@ -188,17 +188,6 @@ def get_model(module_name, udm_api_version, api):
 	# getting this now to raise NoSuperordinate early
 	mod = get_udm_module(module_name=module_name, udm_api_version=udm_api_version)
 	obj = get_obj(mod)
-	if module_name == 'mail/folder':
-		# handle Bug #48031
-		identifying_udm_property = 'name'
-		identifying_ldap_attribute = 'cn'
-	elif module_name == 'settings/office365profile':
-		# handle Bug #48032
-		identifying_udm_property = 'name'
-		identifying_ldap_attribute = 'office365ProfileName'
-	else:
-		identifying_udm_property = mod.meta.identifying_property
-		identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]
 	props_is_multivalue = dict((k, bool(v.multivalue)) for k, v in obj._orig_udm_object.descriptions.iteritems())  # type: Dict[Text, bool]
 	props = dict(
 		(prop, NoneList(NoneString) if is_multivalue else NoneString)

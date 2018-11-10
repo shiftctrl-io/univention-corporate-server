@@ -17,7 +17,7 @@ from ..udm import UDM
 from ..exceptions import NoSuperordinate, UdmError
 from ..encoders import _classify_name
 from ..helpers import get_all_udm_module_names
-from .utils import setup_logging, ucr
+from .utils import get_identifying_property, setup_logging, ucr
 from .resource_model import get_model
 
 try:
@@ -60,7 +60,7 @@ app.register_blueprint(blueprint)
 def search_single_object(udm, module_name, id, abort_on_error=True):
 	# type: (UDM, Text, Text, Optional[bool]) -> BaseObjectTV
 	mod = udm.get(module_name)
-	identifying_property = mod.meta.identifying_property
+	_idl, identifying_property = get_identifying_property(mod)
 
 	if id in (None, '', ','):
 		obj = mod.new()
@@ -157,7 +157,7 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 			logger.debug('UdmResourceList.get() self._udm_object_type=%r args=%r', self._udm_object_type, args)
 			search_kwargs = dict((k, v.strip()) for k, v in args.items() if v and v.strip())  # remove empty values
 			mod = g.udm.get(self._udm_object_type)
-			identifying_property = mod.meta.identifying_property
+			_idl, identifying_property = get_identifying_property(mod)
 			res = []
 			try:
 				for obj in mod.search(**search_kwargs):
@@ -182,10 +182,10 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 			"""Create a new {} object."""
 			logger.debug('UdmResourceList.post() self._udm_object_type=%r', self._udm_object_type)
 			mod = g.udm.get(self._udm_object_type)
-			identifying_property = mod.meta.identifying_property
+			_idl, identifying_property = get_identifying_property(mod)
 			args = modify_parser.parse_args()
 			try:
-				obj_id = args['props'][mod.meta.identifying_property]
+				obj_id = args['props'][identifying_property]
 			except KeyError:
 				msg = 'ID of object is required in "props.{}".'.format(identifying_property)
 				logger.error('400: %s', msg)

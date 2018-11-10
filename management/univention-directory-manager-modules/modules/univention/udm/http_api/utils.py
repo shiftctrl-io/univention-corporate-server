@@ -47,3 +47,18 @@ def resource_name2endpoint(resource_name):  # type: (Text) -> Text
 
 def udm_module_name2endpoint(udm_module_name):  # type: (Text) -> Text
 	return resource_name2endpoint(udm_module_name2resource_name(udm_module_name))
+
+
+def get_identifying_property(mod):  # type: (GenericObject) -> Tuple[Text, Text]
+	if mod.name == 'mail/folder':
+		# handle Bug #48031
+		identifying_udm_property = 'name'
+		identifying_ldap_attribute = 'cn'
+	elif mod.name == 'settings/office365profile':
+		# handle Bug #48032
+		identifying_udm_property = 'name'
+		identifying_ldap_attribute = 'office365ProfileName'
+	else:
+		identifying_udm_property = mod.meta.identifying_property
+		identifying_ldap_attribute = mod.meta.mapping.udm2ldap[identifying_udm_property]
+	return identifying_ldap_attribute, identifying_udm_property
