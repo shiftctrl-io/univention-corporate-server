@@ -251,16 +251,16 @@ def get_model(module_name, udm_api_version, api):
 			pass
 	props = OrderedDict((k, props[k]) for k in sorted(props.keys()))
 
-	specific_obj2urlfield_cls = Obj2UrlField.module_specifc_cls('auto')
+	auto_obj2urlfield_cls = Obj2UrlField.module_specifc_cls('auto')
 
 	return OrderedDict((
 		('id', IdField(description='{} ({})'.format(identifying_udm_property, identifying_ldap_attribute))),
 		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
 		('options', fields.List(fields.String, description='List of options.')),
 		('policies', NoneListWithObjs(
-			specific_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
+			auto_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
 		('position', fields.String(description='DN of LDAP node below which the object is located.')),
 		('props', fields.Nested(api.model('{}Properties'.format(_classify_name(mod.name)), props), skip_none=True)),
-		('superordinate', Obj2UrlField(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),
+		('superordinate', auto_obj2urlfield_cls(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),
 		('uri', Obj2UrlField(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),  # TODO: , scheme='https'
 	))

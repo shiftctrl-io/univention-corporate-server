@@ -191,7 +191,9 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 				logger.error('400: %s', msg)
 				abort(400, msg)
 			logger.info('Creating %r object with args %r...', self._udm_object_type, args)
-			obj = mod.new()  # type: BaseObjectTV
+			superordinate_url = args.get('superordinate')
+			superordinate_dn = url2dn(g.udm, superordinate_url) if superordinate_url else None
+			obj = mod.new(superordinate_dn)  # type: BaseObjectTV
 			obj.options = args.get('options') or []
 			obj.policies = args.get('policies') or []
 			obj.position = args.get('position') or mod._get_default_object_positions()[0]
@@ -241,22 +243,27 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 			"""Update a {} object given its id."""
 			logger.debug('UdmResourceList.put(id=%r) self._udm_object_type=%r', id, self._udm_object_type)
-			# TODO: superordinate
 			args = modify_parser.parse_args()
 			obj = search_single_object(g.udm, self._udm_object_type, id)
 			logger.info('Updating %r with args %r...', obj, args)
 			changed = False
-			for udm_attr in ('options', 'policies', 'position'):
-				if args.get(udm_attr) is not None:
+			for udm_attr in ('options', 'policies', 'position', 'superordinate'):
+				new_value = args.get(udm_attr)
+				if new_value is None:
+					continue
+				old_value = getattr(obj, udm_attr)
+				if old_value != new_value:
 					logger.debug(
-						'(%s) Setting %s to %r (old_value=%r).', id, udm_attr, args[udm_attr], getattr(obj, udm_attr))
-					setattr(obj, udm_attr, args[udm_attr])
+						'(%s) Setting %s to %r (old_value=%r).', id, udm_attr, new_value, old_value)
+					setattr(obj, udm_attr, new_value)
 					changed = True
 			if obj.policies and isinstance(obj.policies, list):
 				obj.policies = [
 					url2dn(g.udm, url) for url in obj.policies
 					if isinstance(url, string_types) and _uri_regex.match(url)
 				]
+			if obj.superordinate and isinstance(obj.superordinate, string_types) and _uri_regex.match(obj.superordinate):
+				obj.superordinate = url2dn(g.udm, obj.superordinate)
 
 			for prop, value in (args.get('props') or {}).iteritems():
 				# logger.debug('*** props.%s: %r', prop, value)
@@ -334,7 +341,7 @@ for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomp
 	create_resource(udm_object_type, ns, ns_model)
 	_url2module['{}/{}'.format(blueprint.url_prefix, api.get_ns_path(ns).strip('/'))] = udm_object_type
 
-# TODO: ressource for metadata:
+# TODO: resource for metadata:
 # * get supported API versions
 # * credentials test
 
