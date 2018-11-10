@@ -5,8 +5,10 @@ import random
 import string
 try:
 	from univention.udm import UDM
+	from univention.admin.uldap import getMachineConnection
+	getMachineConnection()
 	running_on_ucs = True
-except ImportError:
+except Exception:
 	running_on_ucs = False
 import requests
 from bravado.client import SwaggerClient
