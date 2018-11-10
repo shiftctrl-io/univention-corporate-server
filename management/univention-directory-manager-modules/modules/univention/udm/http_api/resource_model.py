@@ -4,12 +4,11 @@ import logging
 import datetime
 from collections import OrderedDict
 from six import string_types
-from flask import g
 from flask_restplus import fields
 from ..udm import UDM
 from ..modules.generic import GenericObject, GenericObjectProperties
 from ..encoders import _classify_name, DnPropertyEncoder
-from ..exceptions import NoObject, NoSuperordinate, UnknownModuleType
+from ..exceptions import NoSuperordinate
 from .utils import get_identifying_property, udm_module_name2endpoint
 
 try:
@@ -182,10 +181,24 @@ def get_obj(mod):  # type: (GenericModuleTV) -> GenericObjectTV
 	raise NoSuperordinate, exc, sys.exc_info()[2]
 
 
-def get_model(module_name, udm_api_version, api):
+def get_base_model(api):  # type: (Union[Api, Namespace]) -> Dict[Text, fields.Raw]
+	logger.debug('get_base_model()')
+	auto_obj2urlfield_cls = Obj2UrlField.module_specifc_cls('auto')
+
+	return api.model('base', OrderedDict((
+		('id', IdField(description='ID of this object.')),
+		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
+		('options', fields.List(fields.String, description='List of options.')),
+		('policies', NoneListWithObjs(
+			auto_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
+		('position', fields.String(description='DN of LDAP node below which the object is located.')),
+		('superordinate', auto_obj2urlfield_cls),
+	)))
+
+
+def get_specific_model(module_name, udm_api_version, api):
 	# type: (Text, int, Union[Api, Namespace]) -> Dict[Text, fields.Raw]
-	logger.debug('get_model(module_name=%r, api=%s(%r))', module_name, api.__class__.__name__, api.name)
-	# getting this now to raise NoSuperordinate early
+	logger.debug('get_specific_model(%r)', module_name)
 	mod = get_udm_module(module_name=module_name, udm_api_version=udm_api_version)
 	obj = get_obj(mod)
 	props_is_multivalue = dict((k, bool(v.multivalue)) for k, v in obj._orig_udm_object.descriptions.iteritems())  # type: Dict[Text, bool]
@@ -240,16 +253,7 @@ def get_model(module_name, udm_api_version, api):
 			pass
 	props = OrderedDict((k, props[k]) for k in sorted(props.keys()))
 
-	auto_obj2urlfield_cls = Obj2UrlField.module_specifc_cls('auto')
-
 	return OrderedDict((
-		('id', IdField(description='{} ({})'.format(identifying_udm_property, identifying_ldap_attribute))),
-		('dn', fields.String(readOnly=True, description='DN of this object (read only)')),
-		('options', fields.List(fields.String, description='List of options.')),
-		('policies', NoneListWithObjs(
-			auto_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
-		('position', fields.String(description='DN of LDAP node below which the object is located.')),
 		('props', fields.Nested(api.model('{}Properties'.format(_classify_name(mod.name)), props), skip_none=True)),
-		('superordinate', auto_obj2urlfield_cls(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),
-		('uri', Obj2UrlField(resource_name2endpoint(api.name), absolute=True, empty_as_string=True)),  # TODO: , scheme='https'
+		('uri', Obj2UrlField(udm_module_name2endpoint(module_name), absolute=True, empty_as_string=True)), # TODO: , scheme='https'
 	))

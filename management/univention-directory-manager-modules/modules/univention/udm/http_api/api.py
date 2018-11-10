@@ -18,7 +18,7 @@ from ..exceptions import NoSuperordinate, UdmError
 from ..encoders import _classify_name
 from ..helpers import get_all_udm_module_names
 from .utils import get_identifying_property, setup_logging, ucr
-from .resource_model import get_model
+from .resource_model import get_base_model, get_specific_model
 
 try:
 	from typing import Any, Dict, List, Optional, Text, Tuple
@@ -317,6 +317,8 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 	return UdmResourceList, UdmResource
 
 
+base_model = get_base_model(api)
+
 incomplete_modules = (
 	'dhcp/dhcp', 'dns/dns', 'mail/mail', 'oxmail/oxmail', 'policies/policy', 'settings/portal_all', 'settings/settings',
 	'shares/print', 'users/passwd', 'users/self',
@@ -324,19 +326,13 @@ incomplete_modules = (
 logger.info('Skipping UDM modules without mapping: %r.', incomplete_modules)
 
 for udm_object_type in [m for m in get_all_udm_module_names() if m not in incomplete_modules]:
-	# if not any(udm_object_type.startswith(x) for x in ('nagios', 'policies', 'computer', 'user', 'group', 'saml')):
-	# 	logger.info('*** Skipping %r...', udm_object_type)
-	# 	continue
-	ns = Namespace(
-		udm_object_type.replace('/', '_'),
-		description='{} related operations'.format(udm_object_type)
-	)
+	ns = Namespace(udm_object_type.replace('/', '_'), description='{} related operations'.format(udm_object_type))
 	try:
-		model = get_model(module_name=udm_object_type, udm_api_version=UDM_API_VERSION, api=ns)
+		udm_model = get_specific_model(module_name=udm_object_type, udm_api_version=UDM_API_VERSION, api=ns)
 	except NoSuperordinate as exc:
 		logger.warn(exc)
 		continue
-	ns_model = ns.model(udm_object_type.replace('/', '_'), model)
+	ns_model = ns.inherit(udm_object_type.replace('/', '_'), base_model, udm_model)
 	api.add_namespace(ns, path='/{}'.format(udm_object_type))
 	create_resource(udm_object_type, ns, ns_model)
 	_url2module['{}/{}'.format(blueprint.url_prefix, api.get_ns_path(ns).strip('/'))] = udm_object_type
