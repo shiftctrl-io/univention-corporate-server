@@ -60,7 +60,7 @@ def serialize_obj(obj):
 	elif isinstance(obj, datetime.date):
 		return obj.strftime('%Y-%m-%d')
 	elif isinstance(obj, BaseHttpObject):
-		return obj._baravo_object['uri']
+		return obj._bravado_object['uri']
 	elif isinstance(obj, dict):
 		res = {}
 		for k, v in obj.iteritems():
@@ -115,7 +115,7 @@ class BaseHttpObject(BaseObject):
 		"""
 		super(BaseHttpObject, self).__init__()
 		self.id = ''
-		self._baravo_object = None  # type: Dict[Text, Any]
+		self._bravado_object = None  # type: Dict[Text, Any]
 		self._fresh = True
 		self._deleted = False
 
@@ -128,9 +128,9 @@ class BaseHttpObject(BaseObject):
 		"""
 		if self._deleted:
 			raise DeletedError('{} has been deleted.'.format(self), dn=self.dn, module_name=self._udm_module.name)
-		if not self.dn or not self._baravo_object:
+		if not self.dn or not self._bravado_object:
 			raise NotYetSavedError(module_name=self._udm_module.name)
-		self._baravo_object = self._udm_module._get_bravado_object(self.id)
+		self._bravado_object = self._udm_module._get_bravado_object(self.id)
 		self._copy_from_bravado_obj(self._udm_module._uri2obj_cache)
 		self._udm_module._uri2obj_cache.clear()
 		return self
@@ -148,7 +148,7 @@ class BaseHttpObject(BaseObject):
 		if not self._fresh:
 			print('WARNING: Saving stale UDM object instance')
 		diff_dict = {}
-		old_obj = serialize_obj(self._baravo_object)
+		old_obj = serialize_obj(self._bravado_object)
 		new_obj = self.to_dict()
 		for k, v in new_obj.iteritems():
 			if k in ('id', 'dn'):
@@ -166,11 +166,11 @@ class BaseHttpObject(BaseObject):
 
 		mod = self._udm_module.connection.users_user
 		if self.id:
-			new_baravo_obj = mod.modify(id=self.id, payload=diff_dict).result()
+			new_bravado_obj = mod.modify(id=self.id, payload=diff_dict).result()
 		else:
-			new_baravo_obj = mod.create(payload=diff_dict).result()
-		self.id = new_baravo_obj['id']
-		self.dn = new_baravo_obj['dn']
+			new_bravado_obj = mod.create(payload=diff_dict).result()
+		self.id = new_bravado_obj['id']
+		self.dn = new_bravado_obj['dn']
 		self._fresh = False
 		if self._udm_module.meta.auto_reload:
 			self.reload()
@@ -185,10 +185,10 @@ class BaseHttpObject(BaseObject):
 		if self._deleted:
 			print('WARNING {} has already been deleted'.format(self))
 			return
-		if not self.dn or not self._baravo_object:
+		if not self.dn or not self._bravado_object:
 			raise NotYetSavedError()
 		self._udm_module.connection.users_user.delete(id=self.id).result()
-		self._baravo_object = None
+		self._bravado_object = None
 		self._deleted = True
 
 	def _uri2obj(self, uri, uri2obj_cache):  # type: (Text, Dict[Text, BaseHttpObject]) -> Union[object, None]
@@ -236,12 +236,12 @@ class BaseHttpObject(BaseObject):
 			prevent infinite recursion)
 		:return: None
 		"""
-		self.id = self._baravo_object['id']
-		self.dn = self._baravo_object['dn']
-		self.options = copy.deepcopy(self._baravo_object['options'])
-		self.policies = copy.deepcopy(self._baravo_object['policies'])
+		self.id = self._bravado_object['id']
+		self.dn = self._bravado_object['dn']
+		self.options = copy.deepcopy(self._bravado_object['options'])
+		self.policies = copy.deepcopy(self._bravado_object['policies'])
 		self.props = self.udm_prop_class(self)
-		for k, v in self._baravo_object['props'].items():
+		for k, v in self._bravado_object['props'].items():
 			if isinstance(v, string_types) and self._uri_regex.match(v):
 				v = self._uri2obj(v, uri2obj_cache)
 			elif (
@@ -252,10 +252,10 @@ class BaseHttpObject(BaseObject):
 				v = [self._uri2obj(x, uri2obj_cache) for x in v]
 				v = [x for x in v if x]
 			setattr(self.props, k, v)
-		self.superordinate = self._baravo_object['superordinate']  # type: Text
+		self.superordinate = self._bravado_object['superordinate']  # type: Text
 		if self.superordinate:
 			self.superordinate = self._uri2obj(self.superordinate, uri2obj_cache)
-		self.position = self._baravo_object['position']
+		self.position = self._bravado_object['position']
 		self._fresh = True
 
 	def to_dict(self):  # type: () -> Dict[Text, Any]
@@ -403,7 +403,7 @@ class BaseHttpModule(BaseModule):
 		"""
 		objs = self._mod.list(_request_options={'headers': {'filter': filter_s, 'base': base, 'scope': scope}}).result()
 		for obj in objs:
-			yield self._load_obj(obj['id'], baravo_object=obj, uri2obj_cache=self._uri2obj_cache)
+			yield self._load_obj(obj['id'], bravado_object=obj, uri2obj_cache=self._uri2obj_cache)
 		self._uri2obj_cache.clear()
 
 	def _get_bravado_object(self, id, superordinate=None):  # type: (Text, Optional[Text]) -> object
@@ -428,7 +428,7 @@ class BaseHttpModule(BaseModule):
 		except HTTPUnauthorized:
 			raise ConnectionError, ConnectionError('Credentials invalid or no permissions to read object {!r} with ID {!r}.'.format(self.name, id)), sys.exc_info()[2]
 
-	def _load_obj(self, id, superordinate=None, baravo_object=None, uri2obj_cache=None):
+	def _load_obj(self, id, superordinate=None, bravado_object=None, uri2obj_cache=None):
 		# type: (Text, Optional[Text], Optional[object], Optional[Dict[Text, BaseHttpObject]]) -> BaseHttpObject
 		"""
 		BaseHttpObject factory.
@@ -437,7 +437,7 @@ class BaseHttpModule(BaseModule):
 		:param superordinate: DN or UDM object this one references as its
 			superordinate (required by some modules)
 		:type superordinate: URI or BaseHttpObject
-		:param baravo_object: baravo object instance, if unset one will be
+		:param bravado_object: bravado object instance, if unset one will be
 			loaded over HTTP using `id`
 		:param dict uri2obj_cache: cache of URL 2 object conversions (to
 			prevent infinite recursion), if unset
@@ -448,10 +448,10 @@ class BaseHttpModule(BaseModule):
 		"""
 		obj = self._udm_object_class()
 		obj._udm_module = self
-		obj._baravo_object = baravo_object or self._get_bravado_object(id, superordinate)
-		self._uri2obj_cache[obj._baravo_object['uri']] = obj
+		obj._bravado_object = bravado_object or self._get_bravado_object(id, superordinate)
+		self._uri2obj_cache[obj._bravado_object['uri']] = obj
 		if uri2obj_cache:
-			uri2obj_cache[obj._baravo_object['uri']] = obj
+			uri2obj_cache[obj._bravado_object['uri']] = obj
 		obj.props = obj.udm_prop_class(obj)
 		obj._copy_from_bravado_obj(uri2obj_cache or self._uri2obj_cache)
 		return obj
