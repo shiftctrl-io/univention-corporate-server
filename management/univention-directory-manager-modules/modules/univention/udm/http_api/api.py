@@ -127,6 +127,18 @@ def verify_pw(username, password):  # type: (Text, Text) -> bool
 		return False
 
 
+list_filter_parser = reqparse.RequestParser()
+list_filter_parser.add_argument('filter', type=str, location='headers', dest='filter_s', help='LDAP filter [optional].')
+list_filter_parser.add_argument('base', type=str, location='headers', help='LDAP subtree to search [optional].')
+list_filter_parser.add_argument('scope', type=str, location='headers', help='LDAP scope to apply [optional].')
+modify_parser = reqparse.RequestParser()
+modify_parser.add_argument('options', type=list, help='Options of object [optional].')
+modify_parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
+modify_parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
+modify_parser.add_argument('props', type=dict, help='Properties of object [optional].')
+modify_parser.add_argument('superordinate', type=str, help='Superordinate object [optional].')
+
+
 def create_resource(module_name, namespace, api_model):  # type: (Text, Namespace, Model) -> Tuple[Any, Any]
 
 	@namespace.route('/')
@@ -137,17 +149,13 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 
 		@namespace.doc('list')
 		@namespace.marshal_list_with(api_model, skip_none=True)
+		@api.expect(list_filter_parser)
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 			"""List all {} objects."""
-			logger.debug('UdmResourceList.get() self._udm_object_type=%r', self._udm_object_type)
-			parser = reqparse.RequestParser()
-			parser.add_argument('filter', type=str, location='headers', dest='filter_s', help='LDAP filter [optional].')
-			parser.add_argument('base', type=str, location='headers', help='LDAP subtree to search [optional].')
-			parser.add_argument('scope', type=str, location='headers', help='LDAP scope to apply [optional].')
-			args = parser.parse_args()
-			logger.debug('UdmResourceList.get() args=%r', args)
-			search_kwargs = dict((k, v) for k, v in args.items() if v and v.strip())  # remove non-empty values
+			args = list_filter_parser.parse_args()
+			logger.debug('UdmResourceList.get() self._udm_object_type=%r args=%r', self._udm_object_type, args)
+			search_kwargs = dict((k, v.strip()) for k, v in args.items() if v and v.strip())  # remove empty values
 			mod = g.udm.get(self._udm_object_type)
 			identifying_property = mod.meta.identifying_property
 			res = []
@@ -168,18 +176,14 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		@namespace.doc('create')
 		@namespace.expect(api_model)
 		@namespace.marshal_with(api_model, skip_none=True, code=201)
+		@api.expect(modify_parser)
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def post(self):  # type: () -> Tuple[Dict[Text, Any], int]
 			"""Create a new {} object."""
 			logger.debug('UdmResourceList.post() self._udm_object_type=%r', self._udm_object_type)
 			mod = g.udm.get(self._udm_object_type)
 			identifying_property = mod.meta.identifying_property
-			parser = reqparse.RequestParser()
-			parser.add_argument('options', type=list, help='Options of object [optional].')
-			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
-			parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
-			parser.add_argument('props', type=dict, required=True, help='Properties of object [required].')
-			args = parser.parse_args()
+			args = modify_parser.parse_args()
 			try:
 				obj_id = args['props'][mod.meta.identifying_property]
 			except KeyError:
@@ -232,17 +236,13 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 		@namespace.doc('modify')
 		@namespace.expect(api_model)
 		@namespace.marshal_with(api_model, skip_none=True)
+		@api.expect(modify_parser)
 		@docstring_params(_udm_object_type.split('/')[-1])
 		def put(self, id):  # type: (Text) -> Tuple[Dict[Text, Any], int]
 			"""Update a {} object given its id."""
 			logger.debug('UdmResourceList.put(id=%r) self._udm_object_type=%r', id, self._udm_object_type)
-			parser = reqparse.RequestParser()
-			parser.add_argument('options', type=list, help='Options of object [optional].')
-			parser.add_argument('policies', type=list, help='Policies applied to object [optional].')
-			parser.add_argument('position', type=str, help='Position of object in LDAP [optional].')
-			parser.add_argument('props', type=dict, help='Properties of object [optional].')
 			# TODO: superordinate
-			args = parser.parse_args()
+			args = modify_parser.parse_args()
 			obj = search_single_object(g.udm, self._udm_object_type, id)
 			logger.info('Updating %r with args %r...', obj, args)
 			changed = False
