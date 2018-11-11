@@ -42,9 +42,11 @@ from six import string_types
 from bravado.exception import HTTPNotFound, HTTPUnauthorized
 from .exceptions import ConnectionError, DeletedError, NoObject, NotYetSavedError
 from .base import BaseModule, BaseModuleMetadata, BaseObject, BaseObjectProperties
+import lazy_object_proxy
 
 try:
-	from typing import Any, Dict, Optional, Text, Union
+	from typing import Any, Dict, List, Optional, Text, TypeVar, Union
+	UriPropertyEncoderTV = TypeVar('UriPropertyEncoderTV', bound='univention.udm.base_http.UriPropertyEncoder')
 except ImportError:
 	pass
 
@@ -131,8 +133,7 @@ class BaseHttpObject(BaseObject):
 		if not self.dn or not self._bravado_object:
 			raise NotYetSavedError(module_name=self._udm_module.name)
 		self._bravado_object = self._udm_module._get_bravado_object(self.id)
-		self._copy_from_bravado_obj(self._udm_module._uri2obj_cache)
-		self._udm_module._uri2obj_cache.clear()
+		self._copy_from_bravado_obj()
 		return self
 
 	def save(self):
@@ -191,70 +192,84 @@ class BaseHttpObject(BaseObject):
 		self._bravado_object = None
 		self._deleted = True
 
-	def _uri2obj(self, uri, uri2obj_cache):  # type: (Text, Dict[Text, BaseHttpObject]) -> Union[object, None]
+	def _uri2obj(self, uri):  # type: (Text) -> Union[object, None]
 		"""
 		Convert a URI to a BaseHttpObject instance.
 
 		:param str uri: a URI
-		:param dict uri2obj_cache: cache of URL 2 object conversions (to
-			prevent infinite recursion)
 		:return: a BaseHttpObject or None if there is none at `uri`
 		:rtype: BaseHttpObject or None
 		"""
-		# TODO: use lazy object loading
-		if uri not in uri2obj_cache:
-			path = urlparse.urlsplit(uri).path
-			path_split = path.strip('/').split('/')
-			module_name = '/'.join(path_split[1:3])
-			obj_id_enc = '/'.join(path_split[3:])
-			obj_id = urllib.unquote(obj_id_enc)
-			try:
-				bravado_mod = getattr(self._udm_module.connection, module_name.replace('/', '_'))
-			except AttributeError:
-				print('ERROR: Swagger client does not know module {!r}.'.format(module_name))
-				uri2obj_cache[uri] = uri
-				return uri
-			try:
-				bravado_obj = bravado_mod.get(id=obj_id).result()
-			except HTTPNotFound:
-				# TODO: fix saml/serviceprovider resource in API server (or UDM?)
-				if module_name != 'saml/serviceprovider':
-					print('404 (Not Found) when loading {!r} object with ID {!r} from URI {!r}.'.format(
-						module_name, obj_id, uri))
-				return None
-			udm_http_mod = BaseHttpModule(module_name, self._udm_module.connection, self._udm_module.meta.used_api_version)
-			res = udm_http_mod._load_obj(obj_id, None, bravado_obj, uri2obj_cache)
-			uri2obj_cache[uri] = res
-		return uri2obj_cache[uri]
+		path = urlparse.urlsplit(uri).path
+		path_split = path.strip('/').split('/')
+		module_name = '/'.join(path_split[1:3])
+		obj_id_enc = '/'.join(path_split[3:])
+		obj_id = urllib.unquote(obj_id_enc)
+		try:
+			bravado_mod = getattr(self._udm_module.connection, module_name.replace('/', '_'))
+		except AttributeError:
+			print('ERROR: Swagger client does not know module {!r}.'.format(module_name))
+			return uri
+		try:
+			bravado_obj = bravado_mod.get(id=obj_id).result()
+		except HTTPNotFound:
+			# TODO: fix saml/serviceprovider resource in API server (or UDM?)
+			if module_name != 'saml/serviceprovider':
+				print('404 (Not Found) when loading {!r} object with ID {!r} from URI {!r}.'.format(
+					module_name, obj_id, uri))
+			return None
+		udm_http_mod = BaseHttpModule(module_name, self._udm_module.connection, self._udm_module.meta.used_api_version)
+		return udm_http_mod._load_obj(obj_id, None, bravado_obj)
 
-	def _copy_from_bravado_obj(self, uri2obj_cache):  # type: (Dict[Text, BaseHttpObject]) -> None
+	def _copy_from_bravado_obj(self):  # type: () -> None
 		"""
 		Copy UDM property values from bravado result object to `props`
 		container as well as its `policies` and `options`.
 
-		:param dict uri2obj_cache: cache of URL 2 object conversions (to
-			prevent infinite recursion)
 		:return: None
 		"""
 		self.id = self._bravado_object['id']
 		self.dn = self._bravado_object['dn']
 		self.options = copy.deepcopy(self._bravado_object['options'])
-		self.policies = copy.deepcopy(self._bravado_object['policies'])
+		self.policies = UriListPropertyEncoder(
+			'__policies',
+			self._udm_module.connection,
+			self._udm_module.meta.used_api_version
+		).decode(self._bravado_object['policies'])
+
 		self.props = self.udm_prop_class(self)
 		for k, v in self._bravado_object['props'].items():
 			if isinstance(v, string_types) and self._uri_regex.match(v):
-				v = self._uri2obj(v, uri2obj_cache)
+				v = UriPropertyEncoder(
+					k,
+					self._udm_module.connection,
+					self._udm_module.meta.used_api_version
+				).decode(v)
 			elif (
 					isinstance(v, list) and
 					all(isinstance(x, string_types) for x in v) and
 					all(self._uri_regex.match(x) for x in v)
 			):
-				v = [self._uri2obj(x, uri2obj_cache) for x in v]
-				v = [x for x in v if x]
+				v = UriListPropertyEncoder(
+						k,
+						self._udm_module.connection,
+						self._udm_module.meta.used_api_version
+					).decode(v)
 			setattr(self.props, k, v)
-		self.superordinate = self._bravado_object['superordinate']  # type: Text
-		if self.superordinate:
-			self.superordinate = self._uri2obj(self.superordinate, uri2obj_cache)
+		superordinate = self._bravado_object['superordinate']  # type: Text
+		if (
+				superordinate and
+				isinstance(superordinate, string_types) and
+				self._uri_regex.match(superordinate)
+		):
+			superordinate_encoder = UriPropertyEncoder(
+				'__superordinate',
+				self._udm_module.connection,
+				self._udm_module.meta.used_api_version
+			)
+			superordinate = superordinate_encoder.decode(superordinate)
+		self.superordinate = superordinate
+
 		self.position = self._bravado_object['position']
 		self._fresh = True
 
@@ -336,7 +351,6 @@ class BaseHttpModule(BaseModule):
 	"""
 	_udm_object_class = BaseHttpObject
 	_udm_module_meta_class = BaseHttpModuleMetadata
-	_uri2obj_cache = {}  # type: Dict[Text, BaseHttpObject]
 
 	class Meta:
 		supported_api_versions = (1,)
@@ -356,10 +370,7 @@ class BaseHttpModule(BaseModule):
 		:return: a new, unsaved BaseHttpObject object
 		:rtype: BaseHttpObject
 		"""
-		# TODO: support superordinate
-		res = self._load_obj(',', superordinate)
-		self._uri2obj_cache.clear()
-		return res
+		return self._load_obj(',', superordinate)
 
 	def get(self, id):
 		"""
@@ -371,9 +382,7 @@ class BaseHttpModule(BaseModule):
 		:raises NoObject: if no object is found at `dn`
 		:raises WrongObjectType: if the object found at `dn` is not of type :py:attr:`self.name`
 		"""
-		res = self._load_obj(id)
-		self._uri2obj_cache.clear()
-		return res
+		return self._load_obj(id)
 
 	def get_by_id(self, id):
 		"""
@@ -403,8 +412,7 @@ class BaseHttpModule(BaseModule):
 		"""
 		objs = self._mod.list(_request_options={'headers': {'filter': filter_s, 'base': base, 'scope': scope}}).result()
 		for obj in objs:
-			yield self._load_obj(obj['id'], bravado_object=obj, uri2obj_cache=self._uri2obj_cache)
-		self._uri2obj_cache.clear()
+			yield self._load_obj(obj['id'], bravado_object=obj)
 
 	def _get_bravado_object(self, id, superordinate=None):  # type: (Text, Optional[Text]) -> object
 		"""
@@ -420,7 +428,6 @@ class BaseHttpModule(BaseModule):
 		:rtype: object
 		:raises NoObject: if no object is found for `id`
 		"""
-		# TODO: support superordinate
 		try:
 			return self._mod.get(id=id).result()
 		except HTTPNotFound:
@@ -428,8 +435,8 @@ class BaseHttpModule(BaseModule):
 		except HTTPUnauthorized:
 			raise ConnectionError, ConnectionError('Credentials invalid or no permissions to read object {!r} with ID {!r}.'.format(self.name, id)), sys.exc_info()[2]
 
-	def _load_obj(self, id, superordinate=None, bravado_object=None, uri2obj_cache=None):
-		# type: (Text, Optional[Text], Optional[object], Optional[Dict[Text, BaseHttpObject]]) -> BaseHttpObject
+	def _load_obj(self, id, superordinate=None, bravado_object=None):
+		# type: (Text, Optional[Text], Optional[object]) -> BaseHttpObject
 		"""
 		BaseHttpObject factory.
 
@@ -439,9 +446,6 @@ class BaseHttpModule(BaseModule):
 		:type superordinate: URI or BaseHttpObject
 		:param bravado_object: bravado object instance, if unset one will be
 			loaded over HTTP using `id`
-		:param dict uri2obj_cache: cache of URL 2 object conversions (to
-			prevent infinite recursion), if unset
-			:py:attr:`self._uri2obj_cache` will be used
 		:return: a BaseHttpObject
 		:rtype: BaseHttpObject
 		:raises NoObject: if no object is found for `id`
@@ -449,9 +453,134 @@ class BaseHttpModule(BaseModule):
 		obj = self._udm_object_class()
 		obj._udm_module = self
 		obj._bravado_object = bravado_object or self._get_bravado_object(id, superordinate)
-		self._uri2obj_cache[obj._bravado_object['uri']] = obj
-		if uri2obj_cache:
-			uri2obj_cache[obj._bravado_object['uri']] = obj
 		obj.props = obj.udm_prop_class(obj)
-		obj._copy_from_bravado_obj(uri2obj_cache or self._uri2obj_cache)
+		obj._copy_from_bravado_obj()
 		return obj
+
+
+class UriPropertyEncoder(object):
+	"""
+	Given a URI, return a string object with the URI and an additional member
+	``obj``. ``obj`` is a lazy object that will become the UDM object the URI
+	refers to, when accessed.
+	"""
+
+	class DnStr(str):
+		# a string with an additional member variable
+		obj = None
+
+		def __deepcopy__(self, memodict=None):
+			return str(self)
+
+	class MyProxy(lazy_object_proxy.Proxy):
+		# overwrite __repr__ for better navigation in ipython
+		def __repr__(self, __getattr__=object.__getattribute__):
+			return super(UriPropertyEncoder.MyProxy, self).__str__()
+
+	def __init__(self, property_name, connection, api_version, *args, **kwargs):
+		self.property_name = property_name
+		self.connection = connection
+		self.api_version = api_version
+
+	def __repr__(self):
+		return '{}({})'.format(self.__class__.__name__, self.property_name)
+
+	@staticmethod
+	def _uri_to_udm_object(uri, connection, api_version):
+		# type: (Text, SwaggerClient, int) -> Union[BaseHttpObject, None, Text]
+		"""
+		Convert a URI to a BaseHttpObject instance.
+
+		:param str uri: a URI
+		:return: a BaseHttpObject or None if there is none at `uri`
+		:rtype: BaseHttpObject or None
+		"""
+		path = urlparse.urlsplit(uri).path
+		path_split = path.strip('/').split('/')
+		module_name = '/'.join(path_split[1:3])
+		obj_id_enc = '/'.join(path_split[3:])
+		obj_id = urllib.unquote(obj_id_enc)
+		try:
+			bravado_mod = getattr(connection, module_name.replace('/', '_'))
+		except AttributeError:
+			print('ERROR: Swagger client does not know module {!r}.'.format(module_name))
+			return uri
+		try:
+			bravado_obj = bravado_mod.get(id=obj_id).result()
+		except HTTPNotFound:
+			# TODO: fix saml/serviceprovider resource in API server (or UDM?)
+			if module_name != 'saml/serviceprovider':
+				print('404 (Not Found) when loading {!r} object with ID {!r} from URI {!r}.'.format(
+					module_name, obj_id, uri))
+			return None
+		udm_http_mod = BaseHttpModule(module_name, connection, api_version)
+		return udm_http_mod._load_obj(obj_id, bravado_object=bravado_obj)
+
+	def decode(self, value=None):  # type: (Optional[Text]) -> Union[DnStr, None]
+		if value in (None, ''):
+			return None
+		new_str = self.DnStr(value)
+		if value:
+			new_str.obj = self.MyProxy(lambda: self._uri_to_udm_object(value, self.connection, self.api_version))
+		return new_str
+
+	@staticmethod
+	def encode(value=None):  # type: (Optional[DnStr]) -> DnStr
+		try:
+			del value.obj
+		except AttributeError:
+			pass
+		return value
+
+
+class UriListPropertyEncoder(object):
+	"""
+	Given a list of DNs, return the same list with an additional member
+	``objs``. ``objs`` is a lazy object that will become the list of UDM
+	objects the DNs refer to, when accessed.
+	"""
+
+	class DnsList(list):
+		# a list with an additional member variable
+		objs = None
+
+		def __deepcopy__(self, memodict=None):
+			return list(self)
+
+	class MyProxy(lazy_object_proxy.Proxy):
+		# overwrite __repr__ for better navigation in ipython
+		def __repr__(self, __getattr__=object.__getattribute__):
+			return super(UriListPropertyEncoder.MyProxy, self).__str__()
+
+	def __init__(self, property_name, connection, api_version, *args, **kwargs):
+		self.property_name = property_name
+		self.connection = connection
+		self.api_version = api_version
+
+	def _list_of_uris_to_list_of_udm_objects(self, value):
+		return [
+			UriPropertyEncoder._uri_to_udm_object(uri, self.connection, self.api_version)
+			for uri in value
+		]
+
+	def decode(self, value=None):  # type: (Optional[List[Text]]) -> Union[DnsList[Text], None]
+		if value is None:
+			return value
+		else:
+			assert hasattr(value, '__iter__'), 'Value is not iterable: {!r}'.format(value)
+			new_list = self.DnsList(value)
+			new_list.objs = self.MyProxy(lambda: self._list_of_uris_to_list_of_udm_objects(value))
+			return new_list
+
+	@staticmethod
+	def encode(value=None):  # type: (Optional[List[Text]]) -> List[Text]
+		try:
+			del value.objs
+		except AttributeError:
+			pass
+		return value
+
+
+def _classify_name(name):  # type: (Text) -> Text
+	mod_parts = name.split('/')
+	return ''.join('{}{}'.format(mp[0].upper(), mp[1:]) for mp in mod_parts)
