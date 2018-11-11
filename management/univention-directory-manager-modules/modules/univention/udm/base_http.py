@@ -117,6 +117,7 @@ class BaseHttpObject(BaseObject):
 		"""
 		super(BaseHttpObject, self).__init__()
 		self.id = ''
+		self.uri = ''
 		self._bravado_object = None  # type: Dict[Text, Any]
 		self._fresh = True
 		self._deleted = False
@@ -172,6 +173,7 @@ class BaseHttpObject(BaseObject):
 			new_bravado_obj = mod.create(payload=diff_dict).result()
 		self.id = new_bravado_obj['id']
 		self.dn = new_bravado_obj['dn']
+		self.uri = new_bravado_obj['uri']
 		self._fresh = False
 		if self._udm_module.meta.auto_reload:
 			self.reload()
@@ -230,6 +232,7 @@ class BaseHttpObject(BaseObject):
 		"""
 		self.id = self._bravado_object['id']
 		self.dn = self._bravado_object['dn']
+		self.uri = self._bravado_object['uri']
 		self.options = copy.deepcopy(self._bravado_object['options'])
 		self.policies = UriListPropertyEncoder(
 			'__policies',
@@ -277,6 +280,7 @@ class BaseHttpObject(BaseObject):
 		return {
 			'id': self.id,
 			'dn': self.dn,
+			'uri': self.uri,
 			'options': self.options,
 			'policies': serialize_obj(self.policies),
 			'position': self.position,
