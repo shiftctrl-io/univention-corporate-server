@@ -95,6 +95,7 @@ Depends: ${misc:Depends},
  python-swagger-spec-validator,
  python-jsonref,
  python-typing,
+ python-lazy-object-proxy,
 Conflicts: python-univention-directory-manager-http-api-client-non-ucs
 Description: Python client for the UDM HTTP-API
  This package contains a HTTP-API client that implements the simple UDM API.
@@ -112,6 +113,7 @@ Depends: ${misc:Depends},
  python-swagger-spec-validator,
  python-jsonref,
  python-typing,
+ python-lazy-object-proxy,
 Conflicts: python-univention-directory-manager-http-api-client
 Description: Python client for the UDM HTTP-API for non-UCS systems
  This package contains a HTTP-API client that implements the simple UDM API
