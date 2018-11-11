@@ -192,7 +192,7 @@ def get_base_model(api):  # type: (Union[Api, Namespace]) -> Dict[Text, fields.R
 		('policies', NoneListWithObjs(
 			auto_obj2urlfield_cls, description='List policy objects, that apply for this object.', empty_as_list=True)),
 		('position', fields.String(description='DN of LDAP node below which the object is located.')),
-		('superordinate', auto_obj2urlfield_cls),
+		('superordinate', auto_obj2urlfield_cls(empty_as_string=True)),
 	)))
 
 
