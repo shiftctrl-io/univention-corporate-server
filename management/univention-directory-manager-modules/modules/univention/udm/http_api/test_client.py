@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 
+import sys
 import time
 import random
 import string
@@ -16,11 +17,15 @@ from bravado.requests_client import RequestsClient
 from bravado.exception import HTTPUnauthorized
 
 
-HOST = '10.20.30.5'
+try:
+	HOST = sys.argv[1]
+except IndexError:
+	HOST = '10.20.30.5'
 PORT = 80
 SCHEME = 'http'
 SWAGGER_URL = '{}://{}:{}/udm/swagger.json'.format(SCHEME, HOST, PORT)
 
+print('Connecting to {!r}.'.format(SWAGGER_URL))
 
 def random_str():
 	return ''.join(random.choice(string.ascii_letters) for _ in range(8))

@@ -193,13 +193,22 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 			logger.info('Creating %r object with args %r...', self._udm_object_type, args)
 			superordinate_url = args.get('superordinate')
 			superordinate_dn = url2dn(g.udm, superordinate_url) if superordinate_url else None
-			obj = mod.new(superordinate_dn)  # type: BaseObjectTV
-			obj.options = args.get('options') or []
-			obj.policies = args.get('policies') or []
-			obj.position = args.get('position') or mod._get_default_object_positions()[0]
-			for k, v in args['props'].items():
-				setattr(obj.props, k, v)
 			try:
+				obj = mod.new(superordinate_dn)  # type: BaseObjectTV
+				obj.options = args.get('options') or []
+				obj.policies = args.get('policies') or []
+				obj.position = args.get('position') or mod._get_default_object_positions()[0]
+				obj.policies = args.get('superordinate') or ''
+				if obj.policies and isinstance(obj.policies, list):
+					obj.policies = [
+						url2dn(g.udm, url) for url in obj.policies
+						if isinstance(url, string_types) and _uri_regex.match(url)
+					]
+				if obj.superordinate and isinstance(obj.superordinate, string_types) and _uri_regex.match(
+						obj.superordinate):
+					obj.superordinate = url2dn(g.udm, obj.superordinate)
+				for prop, value in UdmResource._udmify_arg_props(obj, args).iteritems():
+					setattr(obj.props, prop, value)
 				obj.save().reload()
 			except UdmError as exc:
 				logger.error('400: %s', exc)
@@ -264,14 +273,35 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 				]
 			if obj.superordinate and isinstance(obj.superordinate, string_types) and _uri_regex.match(obj.superordinate):
 				obj.superordinate = url2dn(g.udm, obj.superordinate)
+			for prop, value in self._udmify_arg_props(obj, args).iteritems():
+				old_value = getattr(obj.props, prop)
+				if old_value != value:
+					logger.debug('(%s) Setting props.%s to %r (old_value=%r).', id, prop, value, old_value)
+					try:
+						setattr(obj.props, prop, value)
+					except UdmError as exc:
+						logger.error('400: (%s) %s', id, exc)
+						abort(400, str(exc))
+					changed = True
+			if changed:
+				try:
+					obj.save().reload()
+				except UdmError as exc:
+					logger.error('400: (%s) %s', id, exc)
+					abort(400, str(exc))
+			else:
+				logger.info('No change to %r.', obj)
+			return obj, 200
 
+		@staticmethod
+		def _udmify_arg_props(obj, args):  # type: (BaseObjectTV, Dict[Text, Any]) -> Dict[Text, Any]
+			res = {}
 			for prop, value in (args.get('props') or {}).iteritems():
 				# logger.debug('*** props.%s: %r', prop, value)
 				if getattr(obj.props, prop) == '' and value is None:
 					# Ignore values we set to None earlier (instead of ''), so they
 					# wouldn't be shown in the API.
 					continue
-				old_value = getattr(obj.props, prop)
 				try:
 					encoder = obj.props._encoders[prop]  # type: BaseEncoderTV
 				except KeyError:
@@ -300,19 +330,8 @@ def create_resource(module_name, namespace, api_model):  # type: (Text, Namespac
 						value = url2dn(g.udm, value)
 					elif encoder.type_hint == datetime.date:
 						value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
-				if old_value != value:
-					logger.debug('(%s) Setting props.%s to %r (old_value=%r).', id, prop, value, old_value)
-					setattr(obj.props, prop, value)
-					changed = True
-			if changed:
-				try:
-					obj.save().reload()
-				except UdmError as exc:
-					logger.error('400: (%s) %s', id, exc)
-					abort(400, str(exc))
-			else:
-				logger.info('No change to %r.', obj)
-			return obj, 200
+				res[prop] = value
+			return res
 
 	return UdmResourceList, UdmResource
 
