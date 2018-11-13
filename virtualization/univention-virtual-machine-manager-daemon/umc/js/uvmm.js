@@ -453,6 +453,46 @@ define([
 			});
 		},
 
+		_migrate: function(ids, items) {
+			if (items[0].migrating) {
+				_migrateStatus(ids, items);
+			} else {
+				_migrateDomain(ids, items);
+			}
+		},
+
+		_migrateStatus: function(ids, items) {
+			form = new Form({
+				style: 'max-width: 500px;',
+				widgets: [ {
+					type: Text,
+					name: 'status',
+					content: _( '<p>This machine is currently being migrated.</p>' )
+				}],
+				buttons: [{
+					name: 'postcopy',
+					label: _( 'Switch to postcopy' ),
+					style: 'float: right;',
+					callback: function() {
+						console.log('start postcopy here');
+					}
+				}, {
+					name: 'cancel',
+					label: _('Cancel'),
+					callback: _cleanup
+				}],
+				layout: [ 'status' ]
+			});
+
+			_dialog = new Dialog({
+				title: _('Migrate domain'),
+				content: form,
+				'class': 'umcPopup'
+			});
+
+			_dialog.show();
+		},
+
 		_migrateDomain: function( ids, items ) {
 			var _dialog = null, form = null;
 			var unavailable = array.some( items, function( domain ) {
@@ -506,16 +546,13 @@ define([
 
 				var _migrate = lang.hitch(this, function(name) {
 					// send the UMCP command
-					this.showProgress();
 					tools.umcpCommand('uvmm/domain/migrate', {
 						domainURI: ids[ 0 ],
 						targetNodeURI: name
 					}).then(lang.hitch(this, function() {
 						this.moduleStore.onChange();
-						this.hideProgress();
 					}), lang.hitch(this, function() {
 						this.moduleStore.onChange();
-						this.hideProgress();
 					}));
 				});
 
@@ -524,8 +561,8 @@ define([
 
 				var validHosts = array.filter( items, function( item ) {
 					if (targethosts.length > 0) {
-					// if targethosts are defined, offline targethosts have to be filtered, too
-					return targethosts.indexOf(item.label) != -1 && item.available && item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
+						// if targethosts are defined, offline targethosts have to be filtered, too
+						return targethosts.indexOf(item.label) != -1 && item.available && item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
 					} else {
 						return item.id != sourceURI && types.getNodeType( item.id ) == sourceScheme;
 					}
@@ -1599,7 +1636,7 @@ define([
 				label: _( 'Migrate' ),
 				isStandardAction: false,
 				isMultiAction: true,
-				callback: lang.hitch(this, '_migrateDomain' ),
+				callback: lang.hitch(this, '_migrate' ),
 				canExecute: function(item) {
 					// FIXME need to find out if there are more than one node of this type
 					return !isTerminated(item);
@@ -1685,6 +1722,8 @@ define([
 			else if (item.type == 'domain' || item.type == 'instance') {
 				if ( !item.node_available ) {
 					iconName += '-off';
+				} else if (item.migrating === true) {
+					iconName += '-migrate';
 				} else if (item.state == 'RUNNING' || item.state == 'IDLE') {
 					iconName += '-on';
 				} else if ( item.state == 'PAUSED' || ( item.state == 'SHUTOFF' && item.suspended ) || (item.state == 'SUSPENDED')) {
@@ -1713,7 +1752,9 @@ define([
 				style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'
 			});
 			// set content after creating the object because of HTTP404: Bug #25635
-			var widget = new Text({});
+			var widget = new Text({
+				style: 'vertical-align: bottom;'
+			});
 			this._grid.own(widget);
 			widget.set('content', html);
 
@@ -1735,10 +1776,14 @@ define([
 					tooltipContent = lang.replace( _('State: {state}<br>Server: {node}<br>{vnc_port}' ), tooltipData);
 				}
 
+				if (item.migrating === true) {
+					tooltipContent += lang.replace(_('<br>Migrating: {migration_status}'), item);
+				}
+
 				var tooltip = new Tooltip( {
 					label: tooltipContent,
 					connectId: [ widget.domNode ],
-					position: [ 'below' ]
+					position: [ 'below', 'above' ]
 				});
 				widget.own(tooltip);
 
