@@ -981,6 +981,9 @@ define([
 
 		_updateScrolllessUMC: function(oldModule, newModule) {
 			// TODO cleanup
+			if (has('trident')) {
+				domClass.add(this._topContainer.domNode, 'scrollless-ie');
+			}
 			var categoryNames = this.getCategories().map(function(c) {
 				return lang.replace('category-color-{0}', [c.id]);
 			});
@@ -1012,11 +1015,13 @@ define([
 				this._scrolllessModuleWatchHandler.remove();
 				this._scrolllessModuleWatchHandler = null;
 			}
+
+			// udm stuff
 			var removeUDMClass = lang.hitch(this, function () {
 				domClass.remove(this._topContainer.domNode, ['scrollless-udm-searchpage', 'scrollless-udm-detailpage']);
 			});
 			var addUDMClass = lang.hitch(this, function (module) {
-				domClass.remove(this._topContainer.domNode, ['scrollless-udm-searchpage', 'scrollless-udm-detailpage']);
+				removeUDMClass();
 				var cssClass;
 				switch (module.selectedChildWidget) {
 					case module._searchPage:
@@ -1028,12 +1033,93 @@ define([
 				}
 				domClass.add(this._topContainer.domNode, cssClass);
 			});
-			// udm stuff
 			removeUDMClass();
 			if (newModule.moduleID === 'udm') {
 				addUDMClass(newModule);
 				this._scrolllessModuleWatchHandler = newModule.watch('selectedChildWidget', lang.hitch(this, function(name, oldChild, newChild) {
 					addUDMClass(newModule); // TODO use paramters ?
+				}));
+			}
+
+
+			// quota stuff
+			var removeQuotaClass = lang.hitch(this, function () {
+				domClass.remove(this._topContainer.domNode, ['scrollless-quota-overviewpage', 'scrollless-quota-partitionpage', 'scrollless-quota-detailpage']);
+			});
+			var addQuotaClass = lang.hitch(this, function (module) {
+				removeQuotaClass();
+				var cssClass;
+				switch (module.selectedChildWidget) {
+					case module._overviewPage:
+						cssClass = 'scrollless-quota-overviewpage';
+						break;
+					case module._partitionPage:
+						cssClass = 'scrollless-quota-partitionpage';
+						break;
+					case module._detailPage:
+						cssClass = 'scrollless-quota-detailpage';
+						break;
+				}
+				domClass.add(this._topContainer.domNode, cssClass);
+			});
+			removeQuotaClass();
+			if (newModule.moduleID === 'quota') {
+				addQuotaClass(newModule);
+				this._scrolllessModuleWatchHandler = newModule.watch('selectedChildWidget', lang.hitch(this, function(name, oldChild, newChild) {
+					addQuotaClass(newModule); // TODO use paramters ?
+				}));
+			}
+
+			// join stuff
+			var removeJoinClass = lang.hitch(this, function () {
+				domClass.remove(this._topContainer.domNode, ['scrollless-join-statuspage', 'scrollless-join-joinpage', 'scrollless-join-logpage']);
+			});
+			var addJoinClass = lang.hitch(this, function (module) {
+				removeJoinClass();
+				var cssClass;
+				switch (module.selectedChildWidget) {
+					case module._statuspage:
+						cssClass = 'scrollless-join-statuspage';
+						break;
+					case module._joinpage:
+						cssClass = 'scrollless-join-joinpage';
+						break;
+					case module._logpage:
+						cssClass = 'scrollless-join-logpage';
+						break;
+				}
+				domClass.add(this._topContainer.domNode, cssClass);
+			});
+			removeJoinClass();
+			if (newModule.moduleID === 'join') {
+				addJoinClass(newModule);
+				this._scrolllessModuleWatchHandler = newModule.watch('selectedChildWidget', lang.hitch(this, function(name, oldChild, newChild) {
+					addJoinClass(newModule); // TODO use paramters ?
+				}));
+			}
+
+			// uvmm stuff
+			var removeUVMMClass = lang.hitch(this, function () {
+				domClass.remove(this._topContainer.domNode, ['scrollless-uvmm-searchpage', 'scrollless-uvmm-domainpage']);
+			});
+			var addUVMMClass = lang.hitch(this, function (module) {
+				removeUVMMClass();
+				var cssClass;
+				switch (module.selectedChildWidget) {
+					case module._searchPage:
+						cssClass = 'scrollless-uvmm-searchpage';
+						break;
+					case module._domainPage:
+						cssClass = 'scrollless-uvmm-domainpage';
+						break;
+				}
+				domClass.add(this._topContainer.domNode, cssClass);
+			});
+			removeUVMMClass();
+			if (newModule.moduleID === 'uvmm') {
+				addUVMMClass(newModule);
+				this._scrolllessModuleWatchHandler = newModule.watch('selectedChildWidget', lang.hitch(this, function(name, oldChild, newChild) {
+					addUVMMClass(newModule); // TODO use paramters ?
 				}));
 			}
 			return;

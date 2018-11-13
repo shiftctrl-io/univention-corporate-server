@@ -189,9 +189,17 @@ define([
 			AppCenterPage.prototype.appCenterInformationReadAgain = AppDetailsPage.prototype.appCenterInformationReadAgain;
 		},
 
+		_scrollTo: function(x, y1, y2) {
+			this._bottom.domNode.scrollTo(x, y1);
+			var tabContainer = lang.getObject('umc.app._tabContainer');
+			if (tabContainer) {
+				tabContainer.domNode.scrollTo(x, y2);
+			}
+		},
+
 		showApp: function(app) {
 			this._bottomScrollYBeforeShowApp = this._bottom.domNode.scrollTop;
-			this._winowScrollYBeforeShowApp = window.pageYOffset;
+			this._tabContainerScrollYBeforeShowApp = lang.getObject('umc.app._tabContainer.domNode.scrollTop');
 			if (this._appDetailsPage) {
 				this._appDetailsPage.destroyRecursive();
 			}
@@ -241,8 +249,7 @@ define([
 				}
 			}));
 			this._appDetailsPage.watch('app', lang.hitch(this, function(){
-				this._bottom.domNode.scrollTo(0, 0);
-				window.scrollTo(0, 0);
+				this._scrollTo(0, 0, 0);
 			}));
 
 			this.set('title', entities.encode(app.name) || 'App Center');
@@ -259,13 +266,13 @@ define([
 				this.removeChild(appChooseHostDialog);
 				this.removeChild(this._appDetailsPage);
 				this._appDetailsPage.destroyRecursive();
-				this._bottom.domNode.scrollTo(0, this._bottomScrollYBeforeShowApp);
-				window.scrollTo(0, this._winowScrollYBeforeShowApp);
+				this._scrollTo(0, this._bottomScrollYBeforeShowApp, this._tabContainerScrollYBeforeShowApp);
 			}));
 			this.addChild(this._appDetailsPage);
 
 			this.standbyDuring(this._appDetailsPage.appLoadingDeferred).then(lang.hitch(this, function() {
 				this.selectChild(this._appDetailsPage);
+				this._scrollTo(0, 0, 0);
 			}));
 
 

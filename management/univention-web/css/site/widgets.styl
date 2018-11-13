@@ -35,27 +35,16 @@
 	.umcMultiInputContainer
 		position: relative
 
-
 	/* add a padding to the last element of a row */
 	.umcMultiInputContainer .umcMultiInputLastRowEntry
 		padding-right: 45px
 
 	.umcMultiInputRemoveButton
 		/* move the removal button over the last element of the row */
-		margin: 0 0 0 -35px
-		box-shadow: none
-
-		&.dijitButtonFocused
-			.dijitButtonNode
-				background-color: $button-hovered-background-color
-
-		&.dijitButtonActive
-			.dijitButtonNode
-				background-color: $button-pressed-background-color
+		margin: 0 0 0 calc(-45px + 0.5em) // TODO use variables
 
 		.dijitButtonNode
-			height: 32px
-			background-color: rgba(255, 255, 255, 0)
+			height: 34px
 
 			.dijitButtonContents
 				line-height: @height
@@ -65,17 +54,10 @@
 					background-size: 100% 100%
 					width: 16px
 					height: 16px
-					margin: 0 8px
-					transition: opacity 0.2s
-					opacity: 0.4
-					^[-3].dijitButtonHover ^[-3..-1]
-						opacity: 0.7
-					^[-3].dijitButtonActive ^[-3..-1]
-						opacity: 0.8
+					margin: 0 9px
 
-	/* Buttons were cut off a little to the left - this fixes it*/
 	.umcMultiInputAddButton
-		margin: -8px 0 0 -6px
+		margin: 0 0 0 0.5em // TODO use variable so that this and layoutrow padding are the same
 
 .umc .umcContainerWidget:last-child > .umcLabelPane .umcMultiInput
 	margin-bottom: 0

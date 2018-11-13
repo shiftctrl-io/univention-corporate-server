@@ -140,6 +140,22 @@ headerHeight = 48px
 			.umcLiveSearchSidebarRadioButtonGroup
 				display: none
 
+			@media (max-width: $xxs-max)
+				&.collapsed
+					width: 60px
+
+					.umcSearchBox,
+					.umcSearchBox:before,
+					.umcSearchBox:after
+						border-color: transparent
+
+					.umcSearchIcon
+						margin-right: 20px
+
+					.dijitInputField
+						opacity: 0
+						width: 0
+
 		.umcNotificationDropDownButton
 			position: relative
 			width: 60px

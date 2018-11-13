@@ -126,39 +126,31 @@
 	text-overflow: ellipsis;
 }
 
+
+/* Styling for the MultiInput "Create new policy" button */
+.umc .umcUDMNewPolicyButton {
+	margin: 0 0 0 0.5em;
+}
+
+
 /* Styling of the MultiInput Edit button */
 .umc .umcUDMMultiInputEditButton {
 	margin: 0;
-	-webkit-box-shadow: none;
-	box-shadow: none;
 }
 
 .umc .umcUDMMultiInputEditButton .dijitButtonNode {
-	width: 32px;
-	height: 32px;
-	background-color: rgba(255, 255, 255, 0);
+	width: 34px;
+	height: 34px;
 }
 
 .umc .umcUDMMultiInputEditButton .dijitButtonNode .dijitButtonContents {
-	line-height: 32px;
+	line-height: 34px;
 }
 
 .umc .umcUDMMultiInputEditButton .dijitButtonNode .dijitButtonContents .dijitIcon {
-	margin: 0 6px;
-	opacity: 0.7;
+	margin: 0 7px;
 }
 
-.umc .umcUDMMultiInputEditButton.dijitButtonHover .dijitButtonNode .dijitButtonContents .dijitIcon {
-	opacity: 1;
-}
-/* MultiInput focus */
-.umc .umcUDMMultiInputEditButton.dijitButtonFocused .dijitButtonNode {
-	background-color: rgba(0, 0, 0, 0.0784);
-}
-/* MultiInput active */
-.umc .umcUDMMultiInputEditButton.dijitButtonActive .dijitButtonNode {
-	background-color: rgba(0, 0, 0, 0.16);
-}
 
 /* PortalContentSelection */
 .umc .dojoDndItem_PortalCategory {

@@ -59,21 +59,21 @@
 
 .umc .dijitSelect:before,
 .umc .dijitTextBox:before
-	border-left: thin solid $base-border-color
 	left: 0
+	// border-left: thin solid $base-border-color
 
 .umc .dijitSelect:after,
 .umc .dijitTextBox:after
 	right: 0
-	border-right: thin solid $base-border-color
+	// border-right: thin solid $base-border-color
 
 .umc .dijitSelect,
 .umc .dijitSelect .dijitButtonContents,
 .umc .dijitTextBox,
 .umc .dijitTextBox .dijitButtonNode
 	/* color for (outer) border on *TextBox widgets, and border between input and buttons on ComboBox and Spinner */
-	border: 0 none
-	border-bottom: 1px solid
+	border: 1px solid
+	border-radius: 2px
 	border-color: $base-border-color
 
 .umc .dijitSelect,
@@ -96,13 +96,14 @@
 .umc .dijitSelect,
 .umc .dijitTextBox
 	.dijitInputContainer
-		padding: 0 10px
+		padding: 0 8px
 
 		.dijitInputInner,
 		.umcInlineLabel,
 		.dijitPlaceHolder
 			line-height: 32px
 			height: @line-height
+			padding-top: 2px
 			text-overflow: ellipsis
 
 		.umcInlineLabel,
@@ -111,7 +112,7 @@
 			position: absolute
 			left: 0
 			top: 0
-			padding: @padding
+			padding: 2px 8px 0
 
 		.umcInlineLabel
 			visibility: hidden
@@ -205,6 +206,7 @@
 .umc .dijitComboBox
 	.dijitArrowButtonContainer
 		margin: 6px 10px 0 0
+		border: none
 
 		.dijitArrowButtonInner
 			icon-image(0, 0, "../")
@@ -311,8 +313,8 @@ label
 		margin: 0
 
 		.dijitButton
-			margin-top: 0
-			box-shadow: none
+			margin-top: 1px // for the border of the TextBox
+			material-flat-button()
 
 		.dijitButtonNode
 			background-color: transparent
@@ -320,13 +322,13 @@ label
 
 			.dijitButtonContents
 				line-height: 32px
-				padding: 0 3px
+				padding: 0 4px
 
 	.umcLabelPane.umcSearchFormElementBeforeSubmitButton
 		margin-right: -3.5em
 		padding-right: 3.5em
 
-	.umcLabelPane-dijitCheckBox.umcSearchFormElementBeforeSubmitButton + .umcSearchFormSubmitButton
+	.umcLabelPane-dijitCheckBox.umcSearchFormElementBeforeSubmitButton:not(.dijitDisplayNone) + .umcSearchFormSubmitButton
 		margin-top: -7px
 
 .umc .umcImage

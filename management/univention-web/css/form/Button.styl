@@ -28,25 +28,24 @@
 
 @import "../variables"
 
-.umc .dijitButton,
-.umc .dijitDropDownButton
-	margin: 8px
-	material-shadow-common()
-	material-shadow(1)
-	border-radius: $button-border-radius
-
-	.dijitButtonNode
-		border: none
-		padding: 0px
-		// height: 36px
-		// line-height: 36px
-		color: $text-color
+.umc
+	.dijitButton,
+	.dijitDropDownButton
+		margin: 8px
+		material-shadow-common()
+		material-shadow(1)
 		border-radius: $button-border-radius
-		background-color: white
-		transition: background-color 250ms
 
-		.dijitButtonContents
-			line-height: 36px
+		.dijitButtonNode
+			border: none
+			padding: 0px
+			color: $text-color
+			border-radius: $button-border-radius
+			background-color: white
+			transition: background-color 250ms
+
+			.dijitButtonContents
+				line-height: 36px
 
 .umc
 	.dijitButtonNode,
@@ -78,86 +77,78 @@
 	text-transform: uppercase
 
 /* hover status */
-.umc .dijitButtonHover .dijitButtonNode,
-.umc .dijitDropDownButtonHover .dijitButtonNode,
-.umc .dijitComboButton .dijitButtonNodeHover, 
-.umc .dijitComboButton .dijitDownArrowButtonHover,
-.umc .dijitToggleButtonHover .dijitButtonNode
-	background-color: $button-hovered-background-color
-	.dijitArrowButtonInner
-		opacity: 0.66
+.umc
+	.dijitButtonHover,
+	.dijitDropDownButtonHover
+		.dijitButtonNode
+			background-color: $button-hovered-background-color
+			.dijitArrowButtonInner // TODO why
+				opacity: 0.66
 
 /* focused state */
-//.umc .dijitDropDownButtonFocused,
-.umc .dijitButtonFocused,
-.umc .dijitComboButtonFocused,
-.umc .dijitToggleButtonFocused
-	.dijitButtonNode
-		background-color: $button-hovered-background-color
+.umc
+	.dijitButtonFocused,
+	.dijitDropDownButtonFocused
+		.dijitButtonNode
+			background-color: $button-hovered-background-color
 
 /* active, checked status */
-.umc .dijitButtonActive .dijitButtonNode, 
-.umc .dijitDropDownButtonActive .dijitButtonNode,
-.umc .dijitComboButtonActive .dijitButtonNode,
-.umc .dijitToggleButtonActive .dijitButtonNode,
-.umc .dijitToggleButtonChecked .dijitButtonNode
-	background-color: $button-pressed-background-color
-	//box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.2)
-	//transition-duration: .1s
-	.dijitArrowButtonInner
-		opacity: 1
+.umc
+	.dijitButtonActive,
+	.dijitDropDownButtonActive
+		material-shadow(2)
 
-.umc .dijitButtonActive,
-.umc .dijitDropDownButtonActive,
-.umc .dijitComboButtonActive,
-.umc .dijitToggleButtonActive,
-.umc .dijitToggleButtonChecked
-	material-shadow(2)
+		.dijitButtonNode
+			background-color: $button-pressed-background-color
+
+			.dijitArrowButtonInner // TODO can remove if opacity on hover is gone
+				opacity: 1
 
 /* disabled status */
-.umc .dijitButtonDisabled,
-.umc .dijitDropDownButtonDisabled,
-	background-image: none
-	outline: none
-
-	.dijitButtonDisabled
+.umc
+	.dijitButtonDisabled,
 	.dijitDropDownButtonDisabled
+		box-shadow: none
+
 		.dijitButtonNode
 			background-color: $disabled-background-color
 			color: $disabled-text-color
 
-/* for ComboButton */
-.umc table.dijitComboButton
-	border-collapse: separate	/* override dijit.css so that ComboBox rounded corners work */
 
-.umc .dijitComboButton .dijitStretch
-	border-radius: $button-border-radius 0 0 $button-border-radius
 
-.umc .dijitComboButton .dijitArrowButton
-	border-radius: 0 $button-border-radius $button-border-radius 0
-
+/* special for dijitDropDownButton */
 .umc .dijitDropDownButton
 	.dijitButtonText
 		padding-right: 8px
 	.dijitArrowButtonInner
 		margin-right: 12px
 
-.umc .dijitButton.umcFlatButton
-	material-flat-button()
 
-.umc .dijitButton.umcOutlinedButton
-	material-outlined-button()
+// The syntax here is very deliberate so that the selectors in
+// material-flat-button() and material-outlined-button() work properly
+.umc .umcFlatButton
+	&.dijitButton
+		material-flat-button()
 
+.umc .umcOutlinedButton
+	&.dijitButton
+		material-outlined-button()
+
+/* colored buttons in the grid headers */
 for category-color in users devices domain system software
 	.umc .umcModule.color-{category-color}
-		.umcColoredButton
-			&.dijitButtonHover
-			&.dijitDropDownButtonHover
-			&.dijitButtonFocused
-			&.dijitDropDownButtonFocused
+		.umcGridHeader
+			.dijitButtonHover,
+			.dijitDropDownButtonHover,
+			.dijitButtonFocused,
+			.dijitDropDownButtonFocused
 				.dijitButtonNode
 					background-color: rgba(lookup('$category-color-' + category-color), $button-hovered-background-alpha) !important
-			&.dijitButtonActive
-			&.dijitDropDownButtonActive
+			.dijitButtonActive,
+			.dijitDropDownButtonActive
 				.dijitButtonNode
 					background-color: rgba(lookup('$category-color-' + category-color), $button-pressed-background-alpha) !important
+			.dijitButtonDisabled,
+			.dijitDropDownButtonDisabled
+				.dijitButtonNode
+					background-color: rgba(255, 255, 255, 0) !important

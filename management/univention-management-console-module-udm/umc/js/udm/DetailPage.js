@@ -616,7 +616,7 @@ define([
 							iconClass: 'umcIconEdit',
 							disabled: true,
 							description: _('Edit policy'),
-							'class': 'umcUDMMultiInputEditButton',
+							'class': 'umcUDMMultiInputEditButton umcOutlinedButton',
 							callback: lang.hitch(this, function(dn) {
 								this._openPolicy(ipolicyType, dn);
 							})
@@ -625,7 +625,7 @@ define([
 					var buttonsConf = [{
 						type: Button,
 						name: '$addPolicy$',
-						'class': 'umcFlatButton',
+						'class': 'umcUDMNewPolicyButton umcOutlinedButton',
 						label: _('Create new policy'),
 						callback: lang.hitch(this, '_openPolicy', ipolicyType, undefined)
 					}];

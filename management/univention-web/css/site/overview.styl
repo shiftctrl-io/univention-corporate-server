@@ -31,7 +31,6 @@
 		.dijitButtonContents
 			.umcCategoryButtonCircleWrapper
 				transition: transform 0.3s, opacity 0.3s
-				-webkit-transition: -webkit-transform 0.3s, opacity 0.3s
 				opacity: 0.75
 				transform: scale(0.8, 0.8)
 
@@ -54,38 +53,26 @@
 					^[-4].dijitButtonSelected ^[-4..-1]
 						material-shadow(3)
 
-	.dijitButtonText
-		display: block
-		font-weight: normal
-		text-transform: none
-		color: $text-color-lightest
-		margin-top: 1.5em
-		white-space: pre-line
+			.dijitButtonText
+				display: block
+				font-weight: normal
+				text-transform: none
+				color: $text-color-lightest
+				margin-top: 1.5em
+				white-space: pre-line
 
-	.dijitIcon
-		display: block
-		position: absolute
-		top: 0
-		width: 100%
-		background-position: center top
-		transition: transform 0.3s 0.0s
-		-webkit-transition: -webkit-transform 0.3s 0.0s
-		transform: scale(0.8, 0.8)
-		margin: 0
+			.dijitIcon
+				display: block
+				position: absolute
+				top: 0
+				width: 100%
+				background-position: center top
+				transition: transform 0.3s 0.0s
+				transform: scale(0.8, 0.8)
+				margin: 0
 
-		^[-1].dijitButtonSelected ^[-1..-1]
-			transform: scale(1, 1)
-
-//		.dijitButtonContents
-//			width: 65px
-//			padding-top: 83px
-//			border: 0 none
-//			margin: 10px 32px
-//			padding: 0
-//			background-size: 64px
-//			background-repeat: no-repeat
-//			background-position: top center
-//
+				^[-3].dijitButtonSelected ^[-3..-1]
+					transform: scale(1, 1)
 
 /* search query display */
 .umcOverviewSearchText

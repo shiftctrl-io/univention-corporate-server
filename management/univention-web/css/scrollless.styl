@@ -31,33 +31,22 @@ body
 	bottom: 0
 	left: 0
 	right: 0
-
-	> .dijitStackContainerChildWrapper
-		height: 100%
-		overflow-y: auto
+	overflow-y: auto
 
 // TODO whitelist this for all modules
-.umcGrid .dgrid
-	height: auto
-	max-height: 30em
-	display: flex
-	flex-direction: column
-	.dgrid-scroller
-		position: relative
-		overflow-y: auto
-		overflow-x: hidden
-		// height: 100%
-
-.umcGridTree .dgrid
-	height: auto
-	max-height: 30em
-	display: flex
-	flex-direction: column
-	.dgrid-scroller
-		position: relative
-		overflow-y: auto
-		overflow-x: hidden
-		// height: 100%
+.umcGrid,
+.umcGridTile,
+.umcGridTree
+	.dgrid
+		height: auto
+		max-height: 30em
+		display: flex
+		flex-direction: column
+		.dgrid-scroller
+			position: relative
+			overflow-y: auto
+			overflow-x: hidden
+			// height: 100%
 
 
 
@@ -69,19 +58,19 @@ body
 		overflow-y: auto
 		overflow-x: hidden
 
-	#umcTopContainer.scrollless-appcenter-appcenter, // scrollless basis
-	#umcTopContainer.scrollless-appcenter-packages,
-	#umcTopContainer.scrollless-appcenter-components,
-	#umcTopContainer[class*=' scrollless-udm'],
-	#umcTopContainer.scrollless-setup-certificate,
-	#umcTopContainer.scrollless-setup-languages,
-	#umcTopContainer.scrollless-setup-network,
-	#umcTopContainer.scrollless-top,
-	#umcTopContainer.scrollless-mrtg,
-	#umcTopContainer.scrollless-services,
-	#umcTopContainer.scrollless-ucr,
-	#umcTopContainer.scrollless-diagnostic,
-	#umcTopContainer.scrollless-updater
+	.umcMainTabContainer > .dijitStackContainerChildWrapper
+		height: 100%
+
+	.umcModule
+		height: 100%
+		display: flex // TODO wouldn't be needed if module header has fixed height. May be a performance consideration
+		flex-direction: column
+
+	.umcModuleWrapperWrapper
+		min-height: 0
+		height: 100%
+
+	#umcTopContainer.backup // scrollless basis
 		position: absolute
 		top: 0
 		bottom: 0
@@ -112,17 +101,7 @@ body
 
 	// TODO this could theoretically be put into 'basis'
 	// scrollless: fixed module header
-	#umcTopContainer.scrollless-appcenter-appcenter, // migrate into basis
-	#umcTopContainer.scrollless-appcenter-packages, // theoretically not needed if 'basis' and 'grid page' have same min-height (and also beside that not)
-	#umcTopContainer.scrollless-appcenter-components,
-	#umcTopContainer[class*=' scrollless-udm'],
-	#umcTopContainer.scrollless-setup-certificate,
-	#umcTopContainer.scrollless-setup-languages,
-	#umcTopContainer.scrollless-setup-network,
-	#umcTopContainer.scrollless-mrtg,
-	#umcTopContainer.scrollless-diagnostic,
-	#umcTopContainer.scrollless-updater,
-	#umcTopContainer.scrollless-top
+	#umcTopContainer.backup // migrate into basis
 		.umcModuleHeader
 			position: relative
 			z-index: 1
@@ -135,11 +114,18 @@ body
 
 	// TODO this has duplicated style with UDM. find a basis
 	// scrollless: basic page with one main grid
+	// #umcTopContainer.scrollless-appcenter-packages,
+	// #umcTopContainer.scrollless-top,
+	// #umcTopContainer.scrollless-services,
+	// #umcTopContainer.scrollless-ucr
 	@media (min-height: 750px) and (min-width: $xs-min)
-		#umcTopContainer.scrollless-appcenter-packages,
+		#umcTopContainer.scrollless-quota-overviewpage,
+		#umcTopContainer.scrollless-quota-partitionpage,
+		#umcTopContainer.scrollless-join-statuspage,
 		#umcTopContainer.scrollless-top,
 		#umcTopContainer.scrollless-services,
-		#umcTopContainer.scrollless-ucr
+		#umcTopContainer.scrollless-ucr,
+		#umcTopContainer.scrollless-appcenter-packages
 			.umcGrid .dgrid
 				max-height: none
 			.umcGridTree .dgrid
@@ -175,21 +161,26 @@ body
 					display: flex
 					flex-direction: column
 
-	@media (min-height: 750px)
-		#umcTopContainer[class*=' scrollless-udm'].scrollless-udm-searchpage
-			.umcGrid .dgrid
-				max-height: none
+					^[-2].scrollless-ie ^[-2..-1]
+						height: 100%
 
-			.umcGridTree .dgrid
-				max-height: none
+	// UDM searchpage
+	@media (min-height: 750px)
+		#umcTopContainer.scrollless-udm-searchpage,
+		#umcTopContainer.scrollless-uvmm-searchpage
+			.umcGrid,
+			.umcGridTile,
+			.umcGridTree
+				.dgrid
+					max-height: none
 
 			.umcModuleWrapper,
 			.umcModuleContent,
 			.umcModuleContentChildWrapper,
-			.umcUDMSearchPage
+			.umcPage
 				height: 100%
 
-			.umcUDMSearchPage
+			.umcPage
 				display: flex
 				&.umcPage-fullWidth
 					flex-direction: column
@@ -208,62 +199,77 @@ body
 				.umcPageFooter
 					display: none
 
-				.umcGrid
-					max-height: 100%
-					display: flex
-					flex-direction: column
-
+				.umcGrid,
+				.umcGridTile,
 				.umcGridTree
 					max-height: 100%
+					min-height: 0
 					display: flex
 					flex-direction: column
 
-					.dgrid
+					^[-2].scrollless-ie ^[-2..-1]
 						height: 100%
-						display: flex
-						flex-direction: column
 
-					.dgrid-scroller
-						height: 100%
-						overflow-y: auto
-
+		// styling for UDM modules with trees
 		@media (max-width: $sm-max)
-			#umcTopContainer[class*=' scrollless-udm'].scrollless-udm-searchpage.scrollless-udm-navigation
-				.umcGrid .dgrid
-					max-height: 30em
-
+			#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-navigation,
+			#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-dhcp-dhcp,
+			#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-dns-dns,
+			#umcTopContainer.scrollless-uvmm-searchpage
 				.umcGridTree .dgrid
-					max-height: 30em
+				.umcGrid,
+				.umcGridTile,
+				.umcGridTree
+					.dgrid
+						max-height: 30em
 
 				.umcModuleWrapper,
 				.umcModuleContent,
 				.umcModuleContentChildWrapper,
-				.umcUDMSearchPage
+				.umcPage
 					height: auto
 
-				.umcUDMSearchPage
+				.umcPage
 					flex-direction: column
 
 
 	@media (min-width: $md-min)
-		#umcTopContainer[class*=' scrollless-udm']
-			.umcUDMDetailPage,
-			.umcUDMDetailForm,
-			.umcUDMDetailForm > div,
-			.umcUDMDetailForm > div > div,
-			.umcUDMDetailForm > div > div > div
-			.umcUDMDetailForm .umcPage
+		#umcTopContainer.scrollless-udm-detailpage,
+		#umcTopContainer.scrollless-uvmm-domainpage
+			.umcModuleWrapper
 				height: 100%
 
-			.umcUDMDetailPage
-				.umcPageMain
-					overflow-y: auto
+				.umcModuleContent,
+				.umcModuleContentChildWrapper,
+				.umcPage,
+				.umcUDMDetailForm,
+				.umcUDMDetailForm > div,
+				.umcUDMDetailForm > div > div,
+				.umcUDMDetailForm > div > div > div,
+				.umcUDMDetailForm .umcPage,
+				.dijitStackContainer,
+				.dijitStackContainerChildWrapper
+					height: 100%
 
-		#umcTopContainer.scrollless-udm-navigation
-			.umcUDMSearchPage
+				.umcPage
+					.umcPageMain
+						height: 100%
+						overflow-y: auto
+
+		// TODO could theoretically be put in generic UDM searchpage
+		#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-navigation,
+		#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-dhcp-dhcp,
+		#umcTopContainer.scrollless-udm-searchpage.scrollless-udm-dns-dns,
+		#umcTopContainer.scrollless-uvmm-searchpage
+			.umcPage
 				.umcPageMain
 					display: flex
 					flex-direction: column
+
+
+
+
+
 
 	@media (min-width: $sm-min)
 		.notnow.scrollless-overview

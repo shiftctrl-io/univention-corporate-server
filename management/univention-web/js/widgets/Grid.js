@@ -730,8 +730,7 @@ define([
 				if (iaction.isStandardAction) {
 					// add action to the context toolbar
 					var btn = new Button(lang.mixin(props, getCallback(''), {
-						iconClass: props.iconClass || 'umcIconNoIcon',
-						'class': 'umcColoredButton'
+						iconClass: props.iconClass || 'umcIconNoIcon'
 					}));
 					if (iaction.description) {
 						try {
@@ -764,7 +763,6 @@ define([
 			if (this._contextActionsMenu.getChildren().length) {
 				this._contextActionsToolbar.addChild(new _DropDownButton({
 					iconClass: 'umcIconNoIcon',
-					'class': 'umcColoredButton',
 					label: _('more'),
 					dropDown: this._contextActionsMenu
 				}));
@@ -798,7 +796,6 @@ define([
 						iaction.callback(this.getSelectedIDs(), this.getSelectedItems());
 					});
 				}
-				jaction.class = jaction.class ? jaction.class += ' umcColoredButton' : 'umcColoredButton';
 				return jaction;
 			}, this);
 
