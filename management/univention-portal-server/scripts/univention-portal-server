@@ -31,9 +31,12 @@
 # <http://www.gnu.org/licenses/>.
 
 import json
+from base64 import b64decode
 
 import tornado.ioloop
 import tornado.web
+import saml2
+from saml2.client import Saml2Client
 
 from univention.config_registry import ConfigRegistry
 from univention.udm import UDM
@@ -227,8 +230,23 @@ class EntryHandler(tornado.web.RequestHandler):
 			portal.props.content = new_content
 			portal.save()
 
+class LoginHandler(tornado.web.RequestHandler):
+	def get(self):
+		self.redirect('https://ucs-sso.sparka-43.intranet/simplesamlphp/saml2/idp/SSOService.php?spentityid=https://master90.sparka-43.intranet/univention/portal')
+
+class SamlHandler(tornado.web.RequestHandler):
+	def post(self):
+		response = self.get_body_argument('SAMLResponse')
+		#response = b64decode(response)
+		sp = Saml2Client(config_file='/usr/share/univention-portal/sp.py')
+		authn_response = sp.parse_authn_request_response(response, saml2.BINDING_HTTP_POST)
+		username = authn_response.name_id.text
+		self.write(username)
+
 def make_app():
 	return tornado.web.Application([
+		(r"/portal/login", LoginHandler),
+		(r"/portal/saml/", SamlHandler),
 		(r"/portal/portals/", PortalHandler),
 		(r"/portal/categories/(.*)", CategoryHandler),
 		(r"/portal/entries/(.*)", EntryHandler),
@@ -238,3 +256,20 @@ if __name__ == "__main__":
 	app = make_app()
 	app.listen(4788)
 	tornado.ioloop.IOLoop.current().start()
+
+
+#DN: SAMLServiceProviderIdentifier=https://master90.sparka-43.intranet/univention/portal,cn=saml-serviceprovider,cn=univention,dc=sparka-43,dc=intranet
+#  AssertionConsumerService: https://master90.sparka-43.intranet/portal/saml/
+#  Identifier: https://master90.sparka-43.intranet/univention/portal
+#  NameIDFormat: urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
+#  attributesNameFormat: None
+#  isActivated: TRUE
+#  privacypolicyURL: None
+#  rawsimplesamlSPconfig: None
+#  serviceProviderMetadata: None
+#  serviceProviderOrganizationName: Univention Portal master90.sparka-43.intranet
+#  serviceproviderdescription: None
+#  simplesamlAttributes: FALSE
+#  simplesamlNameIDAttribute: uid
+#  singleLogoutService: None
+# 

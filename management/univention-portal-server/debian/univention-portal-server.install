@@ -1,3 +1,4 @@
 scripts/univention-portal-server usr/bin
+sp.py usr/share/univention-portal
 univention-portal-server.service lib/systemd/system
 univention-portal-server.conf etc/apache2/ucs-sites.conf.d
