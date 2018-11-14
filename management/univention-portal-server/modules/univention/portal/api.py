@@ -8,20 +8,21 @@ import datetime
 import operator
 from six import string_types
 from ldap.filter import filter_format
-from flask import Blueprint, Flask, g
+from flask import Blueprint, Flask, g, redirect, request
 from flask_httpauth import HTTPBasicAuth
+import flask_login
 from flask_restplus import Api, Namespace, Resource, abort, reqparse
 from werkzeug.contrib.fixers import ProxyFix
-from univention.admin.uexceptions import authFail, valueInvalidSyntax
+from univention.admin.uexceptions import valueInvalidSyntax
 
 from univention.udm import UDM
-from univention.udm.exceptions import NoSuperordinate, UdmError
+from univention.udm.exceptions import ConnectionError, MultipleObjects, NoObject, NoSuperordinate, UdmError
 from univention.udm.encoders import _classify_name
 from univention.udm.http_api.utils import get_identifying_property, setup_logging, ucr
 from univention.portal.resource_model import get_base_model, get_specific_model
 
 try:
-	from typing import Any, Dict, Iterable, List, Optional, Text, Tuple
+	from typing import Any, Dict, Iterable, List, Optional, Text, Tuple, Union
 	from univention.udm.base import BaseObjectTV
 	from univention.udm.encoders import BaseEncoderTV
 	from flask_restplus import Model
@@ -36,23 +37,98 @@ _url2module = {}  # type: Dict[Text, Text]
 _uri_regex = re.compile(r'^(https{0,1}?)://(.+?)/udm/(\w+?)/(\w+?)/(.*)')
 
 # https://swagger.io/docs/specification/2-0/authentication/
-authorizations = {
-	'basic': {'type': 'basic'}
-}
+# authorizations = {
+# 	'basic': {'type': 'basic'}
+# }
 auth = HTTPBasicAuth()
 
 app = Flask(__name__)
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # TODO: joinscript: create and store in file
 setup_logging(app)
 logger = logging.getLogger(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 blueprint = Blueprint('api', __name__, url_prefix='/portal')
+app.config['REMEMBER_COOKIE_DURATION'] = datetime.timedelta(minutes=5)
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = '{}/login'.format(blueprint.url_prefix)
+
+udm_machine = UDM.machine().version(UDM_API_VERSION)
+
+
+class ApiUser(flask_login.UserMixin):
+	obj = None  # type: BaseObjectTV
+
+	def get_id(self):
+		return self.obj.props.username
+
+
+@login_manager.user_loader
+def load_user(username):
+	logger.debug('** load_user(%r)', username)
+	try:
+		obj = udm_machine.get('users/user').get_by_id(username)
+	except (NoObject, MultipleObjects):
+		return None
+
+	user = ApiUser()
+	user.obj = obj
+	return user
+
+
+def verify_and_get_user(username, password):  # type: (Text, Text) -> Union[ApiUser, None]
+	logger.debug('*** username=%r password=%r', username, password)
+	if g.get('user'):
+		logger.error('Already set: g.user=%r', g.user)
+		abort(500)
+	if not username or not password:
+		return None
+	user = load_user(username)
+	if not user:
+		return None
+	try:
+		UDM.credentials(user.obj.dn, password)  # noqa
+	except ConnectionError:
+		return None
+	else:
+		g.user = user.obj
+		return user
+
+
+@blueprint.route('/login', methods=['GET', 'POST'])
+def login():
+	next_url = request.args.get('next_url', blueprint.url_prefix)
+	logger.debug('*** login() next_url=%r request.method=%r request.form.items()=%r', next_url, request.method, request.form.items())
+	if request.method == 'POST':
+		user = verify_and_get_user(request.form['username'], request.form['password'])
+		if user:
+			assert user.obj.props.username == request.form['username']
+			flask_login.login_user(user)
+			logger.info('Logged in %r.', user.obj.props.username)
+			return redirect(next_url)
+		else:
+			msg = 'Bad username or password.'
+			logger.info(msg)
+			abort(401, msg)
+	else:
+		return redirect('/')
+
+
+@flask_login.login_required
+@blueprint.route('/logout')
+def logout():
+	logger.debug('** logout()')
+	flask_login.logout_user()
+	return redirect(blueprint.url_prefix)
+
+
 api = Api(
 	blueprint,
 	version=HTTP_API_VERSION,
 	title='Portal API',
 	description='Portal API',
-	authorizations=authorizations,
-	security='basic',
+	# authorizations=authorizations,
+	# security='basic',
 )
 app.register_blueprint(blueprint)
 
@@ -112,24 +188,6 @@ def url2dn(udm, url):  # type: (UDM, Text) -> Text
 	return obj.dn
 
 
-@auth.verify_password
-def verify_pw(username, password):  # type: (Text, Text) -> bool
-	# logger.debug('*** username=%r password=%r', username, password)
-	if g.get('udm'):
-		logger.error('Already set: g.udm=%r', g.udm)
-		abort(500)
-	if not (username and password):
-		return False
-	try:
-		g.udm = UDM.credentials(username, password).version(UDM_API_VERSION)
-		g.user = udm_machine.get('users/user').get_by_id(username)
-		return True
-	except authFail:
-		return False
-
-
-udm_machine = UDM.machine().version(UDM_API_VERSION)
-
 list_parser = reqparse.RequestParser()
 list_parser.add_argument('edit_mode', type=bool, location='args', dest='edit_mode', help='send all objects [optional].')
 list_parser.add_argument('Accept-Language', type=str, location='headers', dest='language', help='Language [optional].')
@@ -146,7 +204,7 @@ def create_resource(module_name, namespace, api_model, methods):
 	@namespace.doc('{}ResourceList'.format(_classify_name(module_name)))
 	class UdmResourceList(Resource):
 		_udm_object_type = module_name
-		method_decorators = (auth.login_required,)
+		# method_decorators = (auth.login_required,)
 
 		if 'list' in methods:
 			@namespace.doc('list')
@@ -156,7 +214,7 @@ def create_resource(module_name, namespace, api_model, methods):
 			def get(self):  # type: () -> Tuple[List[Dict[Text, Any]], int]
 				"""List all {} objects."""
 				args = list_parser.parse_args()
-				logger.debug('UdmResourceList.get() self._udm_object_type=%r args=%r', self._udm_object_type, args)
+				logger.debug('UdmResourceList.get() g.get("user")=%r self._udm_object_type=%r args=%r', g.get('user'), self._udm_object_type, args)
 				edit_mode = bool(args.get('edit_mode'))
 				language = args.get('language')
 				logger.debug('UdmResourceList.get() edit_mode=%r language("Accept-Language")=%r', edit_mode, language)
@@ -164,20 +222,19 @@ def create_resource(module_name, namespace, api_model, methods):
 				_idl, identifying_property = get_identifying_property(mod)
 				if self._udm_object_type == 'settings/portal':
 					portal = UdmResource._get_portal()
-					# content = props.pop('content')
 					new_content = []
 					for cat, entries in portal.props.content:
 						new_entries = []
 						for entry_dn in entries:
 							entry = udm_machine.get('settings/portal_entry').get(entry_dn)
-							if UdmResource._may_view_entry(entry, g.user, edit_mode):
+							if UdmResource._may_view_entry(entry, g.get('user'), edit_mode):
 								new_entries.append(entry)
 						if len(new_entries) == 0:
 							continue
 						entries = [obj.dn for obj in new_entries]
 						new_content.append((cat, entries))
 					portal.props.content = new_content
-					setattr(portal, 'id', getattr(obj.props, identifying_property))
+					setattr(portal, 'id', getattr(portal.props, identifying_property))
 					UdmResource._l10(portal, language)
 					return [portal], 200
 
@@ -185,7 +242,7 @@ def create_resource(module_name, namespace, api_model, methods):
 				try:
 					for obj in mod.search():
 						if self._udm_object_type == 'settings/portal_entry':
-							if not UdmResource._may_view_entry(obj, g.user, edit_mode):
+							if not UdmResource._may_view_entry(obj, g.get('user'), edit_mode):
 								continue
 						setattr(obj, 'id', getattr(obj.props, identifying_property))
 						UdmResource._l10(obj, language)
@@ -201,6 +258,7 @@ def create_resource(module_name, namespace, api_model, methods):
 				return res, 200
 
 		if 'create' in methods:
+			@flask_login.login_required
 			@namespace.doc('create')
 			@namespace.expect(api_model)
 			@namespace.marshal_with(api_model, skip_none=True, code=201)
@@ -242,7 +300,7 @@ def create_resource(module_name, namespace, api_model, methods):
 	@namespace.param('id', 'The objects ID (username, group name etc).')
 	class UdmResource(Resource):
 		_udm_object_type = module_name
-		method_decorators = (auth.login_required,)
+		# method_decorators = (auth.login_required,)
 
 		if 'get' in methods:
 			@namespace.doc('get')
@@ -253,7 +311,7 @@ def create_resource(module_name, namespace, api_model, methods):
 				logger.debug('UdmResourceList.get() id=%r self._udm_object_type=%r', id, self._udm_object_type)
 				args = get_parser.parse_args()
 				obj = search_single_object(udm_machine, self._udm_object_type, id)
-				if not self._may_view_entry(obj, g.user, True):
+				if not self._may_view_entry(obj, g.get('user'), True):
 					abort(404)
 				language = args.get('language')
 				logger.debug('UdmResource.get() language("Accept-Language")=%r', language)
@@ -261,6 +319,7 @@ def create_resource(module_name, namespace, api_model, methods):
 				return obj, 200
 
 		if 'delete' in methods:
+			@flask_login.login_required
 			@namespace.doc('delete')
 			@namespace.response(204, 'Object deleted')
 			@docstring_params(_udm_object_type.split('/')[-1])
@@ -292,6 +351,7 @@ def create_resource(module_name, namespace, api_model, methods):
 				return '', 204
 
 		if 'modify' in methods:
+			@flask_login.login_required
 			@namespace.doc('modify')
 			@namespace.expect(api_model)
 			@namespace.marshal_with(api_model, skip_none=True)
@@ -374,6 +434,8 @@ def create_resource(module_name, namespace, api_model, methods):
 		@staticmethod
 		def _l10(obj, lang):  # type: (BaseObjectTV, Text) -> None
 			def get_lang_code(lang):  # type: (Text) -> Text
+				if not lang:
+					return ''
 				langs = lang.split(',')
 				if not langs:
 					return ''

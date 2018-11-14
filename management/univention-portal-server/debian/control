@@ -13,6 +13,10 @@ Standards-Version: 3.9.5
 Package: univention-portal-server
 Architecture: all
 Depends: python-tornado,
+ python-flask,
+ python-flask-httpauth,
+ python-flask-login,
+ python-jsonschema,
  univention-config,
  ${misc:Depends},
 Description: Univention Portal - Central portal web page for a UCS domain
