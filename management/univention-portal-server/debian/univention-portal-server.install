@@ -1,0 +1,2 @@
+scripts/univention-portal-server usr/bin
+univention-portal-server.service lib/systemd/system

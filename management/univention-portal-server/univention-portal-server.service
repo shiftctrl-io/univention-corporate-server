@@ -1,0 +1,11 @@
+[Install]
+WantedBy=multi-user.target
+
+[Unit]
+Description=Univention Portal Server
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/univention-portal-server
+Restart=on-failure
+RestartSec=5
