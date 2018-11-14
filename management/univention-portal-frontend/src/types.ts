@@ -1,3 +1,5 @@
+export type ContentEntry = [CategoryType, EntryType[]];
+
 export interface CategoryType {
     title: string;
 }
@@ -8,7 +10,7 @@ export interface EntryType {
 
 export interface PortalType {
     title: string;
-    content: Array<[CategoryType, EntryType[]]>;
+    content: Array<ContentEntry>;
 }
 
 export interface PortalData {

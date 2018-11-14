@@ -1,11 +1,15 @@
 <template>
+    <div>{{ entry.title }}</div>
 </template>
 
 <script lang="ts">
-    import {Component, Vue} from 'vue-property-decorator';
+    import {Component, Vue, Prop} from 'vue-property-decorator';
+    import {EntryData} from "../types";
 
     @Component
     export default class Tile extends Vue {
+        @Prop()
+        entry!: EntryData
     }
 </script>
 

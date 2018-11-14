@@ -4,12 +4,11 @@
             {{ portal.title }}
         </div>
         <div class='portal-body'>
-            <template v-for='content_e in portal.content'>
-                <div>{{ content_e[0].title }}</div>
-                <div v-for="entry in content_e[1]">{{ entry.title }}</div>
-            </template>
+            <Category
+                v-for='content_e in portal.content'
+                v-bind:category="content_e"
+            />
         </div>
-
     </div>
 </template>
 
@@ -17,25 +16,28 @@
     import {Component, Vue} from 'vue-property-decorator';
     import services from '../services';
     import {CategoryData, CategoryType, EntryData, EntryType, PortalData, PortalType} from '../types';
+    import Category from '../components/Category.vue';
 
-    @Component
+    @Component({
+        components: {Category}
+    })
     export default class Portal extends Vue {
         private portalO: PortalData = {title_localized: '', content: []};
         private categories: CategoryData = {};
         private entries: EntryData = {};
 
         get portal(): PortalType {
-            const portal = {title: '', content: []} as PortalType;
-            portal.title = this.portalO.title_localized;
-            portal.content = this.portalO.content.map(([cCn, eDns]): [CategoryType, EntryType[]] => {
-                return [
-                    {title: this.categories[cCn].title_localized},
-                    eDns.map((eDn) => {
-                        return {title: this.entries[eDn].title_localized};
-                    }),
-                ];
-            });
-            return portal;
+            return {
+                title: this.portalO.title_localized,
+                content: this.portalO.content.map(([cCn, eDns]): [CategoryType, EntryType[]] => {
+                    return [
+                        {title: this.categories[cCn].title_localized},
+                        eDns.map((eDn) => {
+                            return {title: this.entries[eDn].title_localized};
+                        }),
+                    ];
+                }),
+            };
         }
 
         protected created() {
