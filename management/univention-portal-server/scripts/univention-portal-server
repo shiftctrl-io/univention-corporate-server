@@ -1,0 +1,77 @@
+#!/usr/bin/python
+
+import tornado.ioloop
+import tornado.web
+
+from univention.config_registry import ConfigRegistry
+from univention.udm import UDM
+from univention.udm.encoders import Base64BinaryProperty
+
+def get_portal():
+	ucr = ConfigRegistry()
+	ucr.load()
+	udm = UDM.machine().version(1)
+	localhost = udm.obj_by_dn(ucr.get('ldap/hostdn'))
+	return localhost.props.portal.obj
+
+def may_view_entry(entry):
+	return True
+
+def jsonify_props(obj):
+	ret = {'dn': obj.dn}
+	for k, v in obj.props.__dict__.iteritems():
+		if str(k).startswith('_'):
+			continue
+		if isinstance(v, Base64BinaryProperty):
+			v = v.encoded
+		ret[k] = v
+	return ret
+
+class PortalHandler(tornado.web.RequestHandler):
+
+	def put(self):
+		portal = get_portal()
+		props = jsonify_props(portal)
+		self.write(props)
+
+	def get(self):
+		portal = get_portal()
+		props = jsonify_props(portal)
+		self.write(props)
+
+class CategoryHandler(tornado.web.RequestHandler):
+	def get(self, id):
+		# ignore id
+		portal = get_portal()
+		dns = [x[0] for x in portal.props.content]
+		udm = UDM.machine().version(1)
+		objs = [udm.get('settings/portal_category').get(dn) for dn in dns]
+		self.write({'result': [jsonify_props(obj) for obj in objs]})
+
+class EntryHandler(tornado.web.RequestHandler):
+	def get(self, id):
+		portal = get_portal()
+		udm = UDM.machine().version(1)
+		if not id:
+			dns = []
+			for x in portal.props.content:
+				dns.extend(x[1])
+			objs = [udm.get('settings/portal_entry').get(dn) for dn in dns]
+			objs = [obj for obj in objs if may_view_entry(obj)]
+			self.write({'result': [jsonify_props(obj) for obj in objs]})
+		else:
+			obj = udm.get('settings/portal_entry').get(id)
+			if may_view_entry(obj):
+				self.write(jsonify_props(obj))
+
+def make_app():
+	return tornado.web.Application([
+		(r"/portals/", PortalHandler),
+		(r"/categories/(.*)", CategoryHandler),
+		(r"/entries/(.*)", EntryHandler),
+	])
+
+if __name__ == "__main__":
+	app = make_app()
+	app.listen(8888)
+	tornado.ioloop.IOLoop.current().start()
