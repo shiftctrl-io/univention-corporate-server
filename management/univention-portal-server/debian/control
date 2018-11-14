@@ -1,0 +1,29 @@
+Source: univention-portal-server
+Section: univention
+Priority: optional
+Maintainer: Univention GmbH <packages@univention.de>
+Build-Depends: debhelper (>= 9),
+ univention-join,
+ univention-config-dev,
+ univention-ucs-translation-template,
+ ucslint,
+ stylus
+Standards-Version: 3.9.5
+
+Package: univention-portal-server
+Architecture: all
+Depends: python-tornado,
+ univention-config,
+ ${misc:Depends},
+Description: Univention Portal - Central portal web page for a UCS domain
+ Univention Portal is a web interface which allows a central view
+ to a UCS domain with all installed Apps and services. Univention
+ Portal is configurable, i.e., any and multiple servers can be
+ configured to be show a portal. Portal entries can be configured
+ to be accessible only on specific hosts. Univention Portal is also
+ customisable with a logo and background image.
+ .
+ This package is part of Univention Corporate Server (UCS),
+ an integrated, directory driven solution for managing
+ corporate environments. For more information about UCS,
+ refer to: http://www.univention.de/
