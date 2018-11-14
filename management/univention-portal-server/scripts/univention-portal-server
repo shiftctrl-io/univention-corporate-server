@@ -30,6 +30,8 @@
 # /usr/share/common-licenses/AGPL-3; if not, see
 # <http://www.gnu.org/licenses/>.
 
+import json
+
 import tornado.ioloop
 import tornado.web
 
@@ -37,15 +39,39 @@ from univention.config_registry import ConfigRegistry
 from univention.udm import UDM
 from univention.udm.encoders import Base64BinaryProperty
 
-def get_portal():
+def get_portal(request):
+	# TODO?
 	ucr = ConfigRegistry()
 	ucr.load()
 	udm = UDM.machine().version(1)
 	localhost = udm.obj_by_dn(ucr.get('ldap/hostdn'))
 	return localhost.props.portal.obj
 
-def may_view_entry(entry):
+def is_admin(user):
+	if user is None:
+		return False
+	ucr = ConfigRegistry()
+	ucr.load()
+	admin_group_name = ucr.get('groups/default/domainadmins', 'Domain Admins')
+	udm = UDM.machine().version(1)
+	admins = udm.get('groups/group').get_by_id(admin_group_name)
+	return admins.dn in user.prop.groups
+
+def get_user(request):
+	# TODO
+	return None
+
+def may_view_entry(entry, user, admin):
+	if admin and is_admin(user):
+		return True
+	# TODO
 	return True
+
+def may_edit_obj(entry, user):
+	return is_admin(user)
+
+def may_edit_objs(module_name, user):
+	return is_admin(user)
 
 def jsonify_props(obj):
 	ret = {'dn': obj.dn}
@@ -58,41 +84,148 @@ def jsonify_props(obj):
 	return ret
 
 class PortalHandler(tornado.web.RequestHandler):
-
 	def put(self):
-		portal = get_portal()
+		portal = get_portal(self)
 		props = jsonify_props(portal)
 		self.write(props)
 
 	def get(self):
-		portal = get_portal()
+		udm = UDM.machine().version(1)
+		portal = get_portal(self)
 		props = jsonify_props(portal)
+		new_content = []
+		user = get_user(self)
+		admin = self.get_query_argument('admin', False)
+		content = props.pop('content')
+		for cat, entries in content:
+			new_entries = []
+			for entry_dn in entries:
+				entry = udm.get('settings/portal_entry').get(entry_dn)
+				if may_view_entry(entry, user, admin):
+					new_entries.append(entry)
+			if len(new_entries) == 0:
+				continue
+			entries = [obj.dn for obj in new_entries]
+			new_content.append((cat, entries))
+		props['content'] = new_content
 		self.write(props)
 
 class CategoryHandler(tornado.web.RequestHandler):
+	udm_module = 'settings/portal_category'
 	def get(self, id):
 		# ignore id
-		portal = get_portal()
+		portal = get_portal(self)
 		dns = [x[0] for x in portal.props.content]
 		udm = UDM.machine().version(1)
-		objs = [udm.get('settings/portal_category').get(dn) for dn in dns]
-		self.write({'result': [jsonify_props(obj) for obj in objs]})
+		objs = [udm.get(self.udm_module).get(dn) for dn in dns]
+		ret = {}
+		for obj in objs:
+			ret[obj.dn] = jsonify_props(obj)
+		self.write(ret)
+
+	def post(self, id):
+		# ignore id
+		udm = UDM.machine().version(1)
+		user = get_user(self)
+		if may_edit_objs(self.udm_module, user):
+			obj = udm.get(self.udm_module).new()
+			data = json.loads(self.request.body)['data']
+			for key, value in data.iteritems():
+				setattr(obj.props, key, value)
+			obj.save()
+
+	def put(self, id):
+		udm = UDM.machine().version(1)
+		obj = udm.get(self.udm_module).get(id)
+		user = get_user(self)
+		if may_edit_obj(obj, user):
+			data = json.loads(self.request.body)['data']
+			for key, value in data.iteritems():
+				setattr(obj.props, key, value)
+			obj.save()
+
+	def delete(self, id):
+		udm = UDM.machine().version(1)
+		obj = udm.get(self.udm_module).get(id)
+		user = get_user(self)
+		if may_edit_obj(obj, user):
+			portal = get_portal(self)
+			content = portal.props.content
+			new_content = []
+			for cat, entries in content:
+				if cat == obj.dn:
+					continue
+				new_content.append((cat, entries))
+			portal.props.content = new_content
+			portal.save()
+
 
 class EntryHandler(tornado.web.RequestHandler):
+	udm_module = 'settings/portal_entry'
 	def get(self, id):
-		portal = get_portal()
 		udm = UDM.machine().version(1)
-		if not id:
+		user = get_user(self)
+		admin = self.get_query_argument('admin', False)
+		if id:
+			objs = [udm.get(self.udm_module).get(id)]
+			objs = [obj for obj in objs if may_view_entry(obj, user, admin)]
+			self.write({'result': [jsonify_props(obj) for obj in objs]})
+		else:
+			portal = get_portal(self)
 			dns = []
 			for x in portal.props.content:
 				dns.extend(x[1])
-			objs = [udm.get('settings/portal_entry').get(dn) for dn in dns]
-			objs = [obj for obj in objs if may_view_entry(obj)]
+			objs = [udm.get(self.udm_module).get(dn) for dn in dns]
+			objs = [obj for obj in objs if may_view_entry(obj, user, admin)]
 			self.write({'result': [jsonify_props(obj) for obj in objs]})
-		else:
-			obj = udm.get('settings/portal_entry').get(id)
-			if may_view_entry(obj):
-				self.write(jsonify_props(obj))
+
+	def post(self, id):
+		# ignore id
+		udm = UDM.machine().version(1)
+		user = get_user(self)
+		if may_edit_objs(self.udm_module, user):
+			obj = udm.get(self.udm_module).new()
+			data = json.loads(self.request.body)['data']
+			category = data.pop('category')
+			for key, value in data.iteritems():
+				setattr(obj.props, key, value)
+			obj.save()
+			portal = get_portal(self)
+			content = portal.props.content
+			new_content = []
+			for cat, entries in content:
+				if cat == category:
+					entries.append(obj.dn)
+				new_content.append((cat, entries))
+			portal.props.content = new_content
+			portal.save()
+
+	def put(self, id):
+		udm = UDM.machine().version(1)
+		obj = udm.get(self.udm_module).get(id)
+		user = get_user(self)
+		if may_edit_obj(obj, user):
+			data = json.loads(self.request.body)['data']
+			for key, value in data.iteritems():
+				setattr(obj.props, key, value)
+			obj.save()
+
+	def delete(self, id):
+		udm = UDM.machine().version(1)
+		obj = udm.get(self.udm_module).get(id)
+		user = get_user(self)
+		if may_edit_obj(obj, user):
+			portal = get_portal(self)
+			content = portal.props.content
+			new_content = []
+			for cat, entries in content:
+				if obj.dn in entries:
+					entries.remove(obj.dn)
+					if not entries:
+						continue
+				new_content.append((cat, entries))
+			portal.props.content = new_content
+			portal.save()
 
 def make_app():
 	return tornado.web.Application([
