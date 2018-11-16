@@ -594,7 +594,7 @@ class Data_Domain(object):
 		self.suspended = None  # True|False
 		self.available = None  # None: not set, (True|False) -> node availability
 		self.targethosts = None  # List of node hostnames
-		self.status = ''
+		self.migration = {'msg': ''}
 		self.error = ''
 
 
