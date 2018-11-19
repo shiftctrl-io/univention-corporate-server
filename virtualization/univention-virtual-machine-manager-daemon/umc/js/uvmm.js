@@ -1641,7 +1641,7 @@ define([
 				return '';
 			}
 			if (item.type === 'domain') {
-				if (!isRunning(item)) {
+				if (!isRunning(item) || isPaused(item)) {
 					// only show CPU info, if the machine is running
 					return '';
 				}
@@ -1650,7 +1650,7 @@ define([
 					return '';
 				}
 			}
-			var percentage = Math.round(item.cpuUsage);
+			var percentage = Math.round(item.cpuUsage * 100);
 			var progressBar = new ProgressBar({
 				value: percentage + '%'
 			});
