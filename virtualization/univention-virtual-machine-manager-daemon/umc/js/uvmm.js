@@ -1378,14 +1378,10 @@ define([
 				label: '',
 				iconClass: 'umcIconPlay',
 				style: 'padding: 0; display: inline; margin: 0;',
-				callback: lang.hitch(this, call, 'RUN', 'start', [id], [item])
+				callback: lang.hitch(this, call, 'RUN', 'start', [id], [item]),
+				title: col.description
 			});
 			this._grid.own(btn);
-			var tooltip = new Tooltip({
-				label: col.description,
-				connectId: [btn.domNode]
-			});
-			btn.own(tooltip);
 			item._univention_cache_button_start = btn;
 			return btn;
 		},
@@ -1402,15 +1398,10 @@ define([
 				label: '',
 				iconClass: 'umcIconView',
 				style: 'padding: 0; display: inline; margin: 0;',
-				callback: lang.hitch(this, 'vncLink', [id], [item])
+				callback: lang.hitch(this, 'vncLink', [id], [item]),
+				title: col.description(item)
 			});
 			this._grid.own(btn);
-			var description = col.description(item);
-			var tooltip = new Tooltip({
-				label: description,
-				connectId: [btn.domNode]
-			});
-			btn.own(tooltip);
 			item._univention_cache_button_vnc = btn;
 			return btn;
 		},
@@ -1786,12 +1777,18 @@ define([
 				}
 				}
 
-				var tooltip = new Tooltip( {
+				var tooltip = new Tooltip({
 					label: tooltipContent,
 					connectId: [ widget.domNode ],
-					position: [ 'below' ]
+					position: [ 'after', 'below' ],
+					showDelay: 0
 				});
 				widget.own(tooltip);
+
+				widget.own(on(this._grid._grid, 'contextmenu', function() {
+					tooltip.close();
+				}));
+
 
 				// destroy the tooltip when the widget is destroyed
 				tooltip.connect( widget, 'destroy', 'destroy' );
@@ -1805,18 +1802,11 @@ define([
 				description: description,
 				style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'
 			});
-			var widget = new Text({});
+			var widget = new Text({
+				title: description
+			});
 			this._grid.own(widget);
 			widget.set('content', html);
-
-			var tooltip = new Tooltip({
-				label: description,
-				connectId: [ widget.domNode ],
-				position: [ 'below' ]
-			});
-			widget.own(tooltip);
-			// destroy the tooltip when the widget is destroy
-			tooltip.connect( widget, 'destroy', 'destroy' );
 
 			return widget;
 		},
