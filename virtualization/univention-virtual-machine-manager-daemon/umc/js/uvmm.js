@@ -151,9 +151,6 @@ define([
 		// internal Deferred to control the rate of updating _currentWidth
 		_resizeDeferred: null,
 
-		// TODO: Do we need this?
-		__targetForDomain: {},
-
 		uninitialize: function() {
 			this.inherited(arguments);
 
@@ -442,12 +439,23 @@ define([
 			});
 		},
 
+		_hasMigrationMsg: function(item) {
+			if (item.hasOwnProperty('migration') && item.migration.hasOwnProperty('msg')) {
+				return !!item.migration.msg;
+			}
+			return false;
+		},
+
+		_isMigrating: function(item) {
+			return this._hasMigrationMsg(item) && item.migration.hasOwnProperty('type');
+		},
+
 		_migrate: function(ids, items) {
 			if (items.length > 1) {
 				console.error("Migrating multiple machines is not suported at the moment");
 				return;
 			}
-			if (items[0].migration_status !== '') {
+			if (this._isMigrating(items[0])) {
 				this._migrateStatus(ids, items);
 			} else {
 				this._migrateDomain(ids, items);
@@ -466,7 +474,7 @@ define([
 				widgets: [ {
 					type: Text,
 					name: 'status',
-					content: _( '<p>This machine is currently being migrated.</p><p>%s</p>', items[0].migration_status )
+					content: _( '<p>This machine is currently being migrated.</p><p>%s</p>', items[0].migration.msg )
 				}],
 				buttons: [{
 					name: 'postcopy',
@@ -475,9 +483,9 @@ define([
 					callback: lang.hitch(this, function() {
 						tools.umcpCommand('uvmm/domain/migrate', {
 						domainURI: ids[ 0 ],
-						targetNodeURI: this.__targetForDomain[ids[0]],
 						mode: 101
 						});
+						this._grid._grid.deselect(ids[0]);
 						_cleanup();
 					})
 				}, {
@@ -487,9 +495,9 @@ define([
 					callback: lang.hitch(this, function() {
 						tools.umcpCommand('uvmm/domain/migrate', {
 						domainURI: ids[ 0 ],
-						targetNodeURI: this.__targetForDomain[ids[0]],
 						mode: -1
 						});
+						this._grid._grid.deselect(ids[0]);
 						_cleanup();
 					})
 				}, {
@@ -572,7 +580,6 @@ define([
 							var nameWidget = form.getWidget('name');
 							if (nameWidget.isValid()) {
 								var name = nameWidget.get('value');
-								this.__targetForDomain[ids[0]] = name;
 								_cleanup();
 								this._grid._grid.deselect(ids[0]);
 								_migrate( name );
@@ -1697,7 +1704,7 @@ define([
 			else if (item.type == 'domain' || item.type == 'instance') {
 				if ( !item.node_available ) {
 					iconName += '-off';
-				} else if (item.migration_status !== '') {
+				} else if (this._isMigrating(item)) {
 					iconName += '-migrate';
 				} else if (item.state == 'RUNNING' || item.state == 'IDLE') {
 					iconName += '-on';
@@ -1751,8 +1758,8 @@ define([
 					tooltipContent = lang.replace( _('State: {state}<br>Server: {node}<br>{vnc_port}' ), tooltipData);
 				}
 
-				if (item.migration_status !== '') {
-					tooltipContent += lang.replace(_('<br>Migrating: {migration_status}'), item);
+				if (this._hasMigrationMsg(item)) {
+					tooltipContent += lang.replace(_('<br>Migrating: {msg}'), item.migration);
 				}
 
 				var tooltip = new Tooltip({

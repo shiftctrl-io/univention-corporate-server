@@ -96,7 +96,7 @@ class Domains(object):
 			'type': 'domain',
 			'vnc': <boolean>,
 			'vnc_port': <int>,
-			'migration_status': <TODO>,
+			'migration': <dict>,
 			}, ...]
 		"""
 
@@ -122,7 +122,7 @@ class Domains(object):
 						'suspended': bool(domain['suspended']),
 						'description': domain['description'],
 						'node_available': domain['node_available'],
-						'migration_status': domain['status'],
+						'migration': domain['migration'],
 					})
 			return domain_list
 
@@ -507,15 +507,19 @@ class Domains(object):
 
 		return:
 		"""
-		self.required_options(request, 'domainURI', 'targetNodeURI')
+		self.required_options(request, 'domainURI')
 		node_uri, domain_uuid = urldefrag(request.options['domainURI'])
+		mode = request.options.get('mode', 0)
+		if mode < 101 and mode > -1:
+			self.required_options(request, 'targetNodeURI')
+		target_uri = request.options.get('targetNodeURI', '')
 		self.uvmm.send(
 			'DOMAIN_MIGRATE',
 			self.process_uvmm_response(request),
 			uri=node_uri,
 			domain=domain_uuid,
-			target_uri=request.options['targetNodeURI'],
-			mode=request.options.get('mode', 0),
+			target_uri=target_uri,
+			mode=mode
 		)
 
 	def domain_clone(self, request):
