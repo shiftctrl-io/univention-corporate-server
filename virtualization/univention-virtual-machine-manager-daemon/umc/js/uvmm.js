@@ -246,12 +246,6 @@ define([
 					grid: this._grid,
 					tree: this._tree,
 					interval: parseInt(ucr['uvmm/umc/autoupdate/interval'], 10),
-					onItemCountChanged: lang.hitch(this, function() {
-						if (!this._itemCountChangedNoteShowed) {
-							this.addNotification(_('The number of virtual machines changed. To update the view, click on "Search".'));
-							this._itemCountChangedNoteShowed = true;
-						}
-					})
 				});
 				this.own(this._gridUpdater);
 
