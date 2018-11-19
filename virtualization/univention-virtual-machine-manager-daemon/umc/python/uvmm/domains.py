@@ -96,6 +96,7 @@ class Domains(object):
 			'type': 'domain',
 			'vnc': <boolean>,
 			'vnc_port': <int>,
+			'migration_status': <TODO>,
 			}, ...]
 		"""
 
@@ -121,6 +122,7 @@ class Domains(object):
 						'suspended': bool(domain['suspended']),
 						'description': domain['description'],
 						'node_available': domain['node_available'],
+						'migration_status': domain['status'],
 					})
 			return domain_list
 
@@ -512,7 +514,8 @@ class Domains(object):
 			self.process_uvmm_response(request),
 			uri=node_uri,
 			domain=domain_uuid,
-			target_uri=request.options['targetNodeURI']
+			target_uri=request.options['targetNodeURI'],
+			mode=request.options.get('mode', 0),
 		)
 
 	def domain_clone(self, request):

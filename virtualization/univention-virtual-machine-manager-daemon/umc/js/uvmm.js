@@ -151,6 +151,9 @@ define([
 		// internal Deferred to control the rate of updating _currentWidth
 		_resizeDeferred: null,
 
+		// TODO: Do we need this?
+		__targetForDomain: {},
+
 		uninitialize: function() {
 			this.inherited(arguments);
 
@@ -440,31 +443,58 @@ define([
 		},
 
 		_migrate: function(ids, items) {
-			if (items[0].migrating) {
-				_migrateStatus(ids, items);
+			if (items.length > 1) {
+				console.error("Migrating multiple machines is not suported at the moment");
+				return;
+			}
+			if (items[0].migration_status !== '') {
+				this._migrateStatus(ids, items);
 			} else {
-				_migrateDomain(ids, items);
+				this._migrateDomain(ids, items);
 			}
 		},
 
 		_migrateStatus: function(ids, items) {
-			form = new Form({
+			var _dialog = null;
+			var _cleanup = function() {
+				_dialog.hide();
+				_dialog.destroyRecursive();
+			};
+
+			var form = new Form({
 				style: 'max-width: 500px;',
 				widgets: [ {
 					type: Text,
 					name: 'status',
-					content: _( '<p>This machine is currently being migrated.</p>' )
+					content: _( '<p>This machine is currently being migrated.</p><p>%s</p>', items[0].migration_status )
 				}],
 				buttons: [{
 					name: 'postcopy',
 					label: _( 'Switch to postcopy' ),
 					style: 'float: right;',
-					callback: function() {
-						console.log('start postcopy here');
-					}
+					callback: lang.hitch(this, function() {
+						tools.umcpCommand('uvmm/domain/migrate', {
+						domainURI: ids[ 0 ],
+						targetNodeURI: this.__targetForDomain[ids[0]],
+						mode: 101
+						});
+						_cleanup();
+					})
+				}, {
+					name: 'abort',
+					label: _( 'Abort migration' ),
+					style: 'float: right;',
+					callback: lang.hitch(this, function() {
+						tools.umcpCommand('uvmm/domain/migrate', {
+						domainURI: ids[ 0 ],
+						targetNodeURI: this.__targetForDomain[ids[0]],
+						mode: -1
+						});
+						_cleanup();
+					})
 				}, {
 					name: 'cancel',
-					label: _('Cancel'),
+					label: _('Close'),
 					callback: _cleanup
 				}],
 				layout: [ 'status' ]
@@ -538,14 +568,16 @@ define([
 						name: 'submit',
 						label: _( 'Migrate' ),
 						style: 'float: right;',
-						callback: function() {
+						callback: lang.hitch(this, function() {
 							var nameWidget = form.getWidget('name');
 							if (nameWidget.isValid()) {
 								var name = nameWidget.get('value');
+								this.__targetForDomain[ids[0]] = name;
 								_cleanup();
+								this._grid._grid.deselect(ids[0]);
 								_migrate( name );
 							}
-						}
+						})
 					}, {
 						name: 'cancel',
 						label: _('Cancel'),
@@ -1665,7 +1697,7 @@ define([
 			else if (item.type == 'domain' || item.type == 'instance') {
 				if ( !item.node_available ) {
 					iconName += '-off';
-				} else if (item.migrating === true) {
+				} else if (item.migration_status !== '') {
 					iconName += '-migrate';
 				} else if (item.state == 'RUNNING' || item.state == 'IDLE') {
 					iconName += '-on';
@@ -1719,7 +1751,7 @@ define([
 					tooltipContent = lang.replace( _('State: {state}<br>Server: {node}<br>{vnc_port}' ), tooltipData);
 				}
 
-				if (item.migrating === true) {
+				if (item.migration_status !== '') {
 					tooltipContent += lang.replace(_('<br>Migrating: {migration_status}'), item);
 				}
 
