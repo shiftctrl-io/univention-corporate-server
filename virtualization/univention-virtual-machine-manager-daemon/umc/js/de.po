@@ -329,6 +329,28 @@ msgstr "Auswahl einer vorhandenen Image-Datei"
 msgid "Clone"
 msgstr "Klonen"
 
+#: umc/js/uvmm.js:497
+msgid "Close"
+msgstr "Schließen"
+
+#: umc/js/uvmm.js:485
+msgid "Abort migration"
+msgstr "Migration abbrechen"
+
+#: umc/js/uvmm.js:473
+msgid "Switch to postcopy"
+msgstr "Zu Postcopymigation wechseln"
+
+#: umc/js/uvmm.js:1792
+msgid "IO error \"{reason}\" on device \"{device}[{srcpath}]\""
+msgstr "IO Fehler \"{reason}\" auf Gerät \"{device}[{srcpath}]\""
+
+#: umc/js/uvmm.js:474
+msgid ""
+"Migration in progress since {time_elapsed} sec, iteration {memory_iteration}"
+msgstr ""
+"Migration gestartet vom {time_elapsed} sec, Iteration {memory_iteration}"
+
 #: umc/js/uvmm/TreeModel.js:95
 msgid "Cloud connections"
 msgstr "Cloud-Verbindungen"
