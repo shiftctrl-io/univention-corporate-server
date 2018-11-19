@@ -1,3 +1,34 @@
+univention-appcenter (7.0.2-43) unstable; urgency=medium
+
+  * Bug #43612: Do not create systemd service; fix start/stop/restart
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Thu, 15 Nov 2018 16:32:54 +0100
+
+univention-appcenter (7.0.2-42) unstable; urgency=medium
+
+  * Bug #43612: JS fixes, always recreate compose.yml
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Thu, 15 Nov 2018 14:47:12 +0100
+
+univention-appcenter (7.0.2-41) unstable; urgency=medium
+
+  * Bug #47824: please check this box if you want to proceed error for
+    any unchecked box in app settings
+
+ -- Jens Pelzetter <jpelzett@tossberg.knut.univention.de>  Wed, 14 Nov 2018 08:53:16 +0100
+
+univention-appcenter (7.0.2-40) unstable; urgency=medium
+
+  * Bug #43612: Log commands, log cwd
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Tue, 13 Nov 2018 20:20:23 +0100
+
+univention-appcenter (7.0.2-39) unstable; urgency=medium
+
+  * Bug #43612: Dev Tools need to support compose file
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Tue, 13 Nov 2018 13:48:53 +0100
+
 univention-appcenter (7.0.2-38) unstable; urgency=medium
 
   * Bug #43612: Typo

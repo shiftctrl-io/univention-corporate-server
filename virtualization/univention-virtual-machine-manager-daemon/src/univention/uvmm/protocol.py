@@ -594,7 +594,7 @@ class Data_Domain(object):
 		self.suspended = None  # True|False
 		self.available = None  # None: not set, (True|False) -> node availability
 		self.targethosts = None  # List of node hostnames
-		self.status = ''
+		self.migration = {'msg': ''}
 		self.error = ''
 
 
@@ -608,7 +608,7 @@ class Data_Node(object):
 		self.phyMem = None
 		self.curMem = None
 		self.maxMem = None
-		self.cpu_usage = None
+		self.cpu_usage = 0.0
 		self.cpus = None
 		self.cores = (None, None, None, None)
 		self.domains = []  # Data_Domain

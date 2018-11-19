@@ -77,7 +77,7 @@ DOM_EVENT_STRINGS = (
 	("Started", ("Booted", "Migrated", "Restored", "Snapshot", "Wakeup")),
 	("Suspended", ("Paused", "Migrated", "IOError", "Watchdog", "Restored", "Snapshot", "API error", "Postcopy", "Postcopy failed")),
 	("Resumed", ("Unpaused", "Migrated", "Snapshot", "Postcopy")),
-	("Stopped", ("Shutdown", "Destroyed", "Crashed", "Migrated", "Saved", "Failed", "Snapshot")),
+	("Stopped", ("Shutdown", "Destroyed", "Crashed", "Migrated", "Saved", "Failed", "Snapshot", "Daemon")),
 	("Shutdown", ("Finished", "On guest request", "On host request")),
 	("PMSuspended", ("Memory", "Disk")),
 	("Crashed", ("Panicked",)),
@@ -323,7 +323,13 @@ class Domain(PersistentCached):
 			self.pd.curMem = long(curMem) << 10  # KiB
 			delta_used = runtime - self._time_used  # running [ns]
 			self._time_used = runtime
-			self.migration_status(domain.jobStats())
+			try:
+				stats = domain.jobStats()
+			except libvirt.libvirtError as ex:
+				if ex.get_error_code() != libvirt.VIR_ERR_OPERATION_UNSUPPORTED:
+					logger.warning('Failed to query job status %s: %s', self.pd.uuid, ex.get_error_message())
+			else:
+				self.migration_status(stats)
 
 		# Calculate historical CPU usage
 		# http://www.teamquest.com/resources/gunther/display/5/
@@ -331,12 +337,12 @@ class Domain(PersistentCached):
 		delta_t = now - self._time_stamp  # wall clock [s]
 		if delta_t > 0.0 and delta_used >= 0L:
 			try:
-				self._cpu_usage = delta_used / delta_t / self.pd.vcpus / 1000000  # ms
+				self._cpu_usage = delta_used / delta_t / self.pd.vcpus / 1e9  # scale [ns] to percentage
 			except ZeroDivisionError:
 				self._cpu_usage = 0
-			for i in range(len(Domain.CPUTIMES)):
-				if delta_t < Domain.CPUTIMES[i]:
-					exp = math.exp(-1.0 * delta_t / Domain.CPUTIMES[i])
+			for i, span in enumerate(Domain.CPUTIMES):
+				if delta_t < span:
+					exp = math.exp(-delta_t / span)
 					self.pd.cputime[i] *= exp
 					self.pd.cputime[i] += (1.0 - exp) * self._cpu_usage
 				else:
@@ -482,8 +488,10 @@ class Domain(PersistentCached):
 		#  'time_elapsed': 1L,
 		#  'type': 2,
 		# }
+		self.pd.migration.update(stats)
 		typ = stats.get('type', None)
 		if typ == 0:
+			self.pd.migration['msg'] = ''
 			return ('', {})
 		elif typ is None:
 			fmt = _('Migration completed after %(time)s in %(iteration)d iterations')
@@ -493,7 +501,7 @@ class Domain(PersistentCached):
 			time=ms(stats.get('time_elapsed', 0)),
 			iteration=stats.get('memory_iteration', 1),
 		)
-		self.pd.status = fmt % vals
+		self.pd.migration['msg'] = fmt % vals
 		return (fmt, vals)
 
 	def xml2obj(self, xml):
@@ -843,6 +851,7 @@ class Node(PersistentCached):
 			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_REBOOT, self.reboot_event, None),
 			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION, self.migration_event, None),
 			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_JOB_COMPLETED, self.job_event, None),
+			self.conn.domainEventRegisterAny(None, libvirt.VIR_DOMAIN_EVENT_ID_IO_ERROR_REASON, self.error_event, None),
 		]
 
 	def livecycle_event(self, conn, dom, event, detail, opaque):
@@ -861,6 +870,8 @@ class Node(PersistentCached):
 			if event == libvirt.VIR_DOMAIN_EVENT_UNDEFINED:
 				if detail == libvirt.VIR_DOMAIN_EVENT_UNDEFINED_REMOVED:
 					del self.domains[uuid]
+			elif event == libvirt.VIR_DOMAIN_EVENT_STOPPED and detail == libvirt.VIR_DOMAIN_EVENT_STOPPED_MIGRATED:
+				pass
 			else:
 				try:
 					domStat = self.domains[uuid]
@@ -929,7 +940,7 @@ class Node(PersistentCached):
 			domStat.migration_status(dom.jobStats())
 			try:
 				switch = int(configRegistry['uvmm/migrate/postcopy'])
-			except (LookupError, ValueError):
+			except (LookupError, TypeError, ValueError):
 				return
 			if iteration == switch:
 				dom.migrateStartPostCopy()
@@ -1157,7 +1168,9 @@ class Node(PersistentCached):
 					'vnc_port': vnc[1] if vnc else -1,
 					'suspended': pd.suspended,
 					'description': descr,
-					'node_available': self.pd.last_try == self.pd.last_update
+					'node_available': self.pd.last_try == self.pd.last_update,
+					'migration': pd.migration,
+					'error': pd.error,
 				})
 
 		return domains
@@ -1858,7 +1871,7 @@ def domain_state(uri, domain, state):
 					stat_key = dom_stat.key()
 					node.wait_update(domain, stat_key)
 
-			dom_stat.pd.status = ''
+			dom_stat.pd.migration.clear()
 			dom_stat.pd.error = ''
 	except KeyError as ex:
 		logger.error("Domain %s not found", ex)
@@ -1958,11 +1971,11 @@ def domain_migrate(source_uri, domain, target_uri, mode=0):
 			source_state = source_dom.info()[0]
 		domStat = source_node.domains[domain]
 
-		target_node = node_query(target_uri)
-		target_conn = target_node.conn
-		assert target_conn is not None
-
 		if source_conn is None:  # offline node
+			target_node = node_query(target_uri)
+			target_conn = target_node.conn
+			assert target_conn is not None
+
 			try:
 				cache_file_name = domStat.cache_file_name()
 				with open(cache_file_name, 'r') as cache_file:
@@ -1979,12 +1992,12 @@ def domain_migrate(source_uri, domain, target_uri, mode=0):
 			stats = source_dom.jobStats()
 			if stats['type'] != libvirt.VIR_DOMAIN_JOB_NONE:
 				if mode < 0:
-					logger.info('Domain "%(domain)s" aborting migration: %(stats)r', domain=domain, stats=stats)
-					domStat.pd.status = _('Migration aborted')
+					logger.info('Domain "%(domain)s" aborting migration: %(stats)r', dict(domain=domain, stats=stats))
+					domStat.pd.migration['msg'] = _('Migration aborted')
 					source_dom.abortJob()
 				elif mode > 100:
-					logger.info('Domain "%(domain)s" switching to post-copy: %(stats)r', domain=domain, stats=stats)
-					domStat.pd.status = _('Post-Copy migration forced')
+					logger.info('Domain "%(domain)s" switching to post-copy: %(stats)r', dict(domain=domain, stats=stats))
+					domStat.pd.migration['msg'] = _('Post-Copy migration forced')
 					source_dom.migrateStartPostCopy()
 				else:
 					fmt, vals = domStat.migration_status(stats)
@@ -2006,36 +2019,61 @@ def domain_migrate(source_uri, domain, target_uri, mode=0):
 		else:
 			raise NodeError(_('Domain "%(domain)s" in state "%(state)s" can not be migrated'), domain=domain, state=STATES[source_state])
 
+		target_node = node_query(target_uri)
+		target_conn = target_node.conn
+		assert target_conn is not None
+
 		_domain_backup(source_dom)
 
-		while source_dom.snapshotNum() > 0:
-			for snapshot in source_dom.listAllSnapshots(libvirt.VIR_DOMAIN_SNAPSHOT_LIST_LEAVES):
-				snap_xml = snapshot.getXMLDesc(libvirt.VIR_DOMAIN_XML_SECURE)
-				snapshots.append(snap_xml)
-				logger.info('Deleting snapshot %s of domain %s', snapshot.getName(), domain)
-				snapshot.delete(libvirt.VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
-		snapshots.reverse()
+		def _migrate(errors):
+			try:
+				while source_dom.snapshotNum() > 0:
+					for snapshot in source_dom.listAllSnapshots(libvirt.VIR_DOMAIN_SNAPSHOT_LIST_LEAVES):
+						snap_xml = snapshot.getXMLDesc(libvirt.VIR_DOMAIN_XML_SECURE)
+						snapshots.append(snap_xml)
+						logger.info('Deleting snapshot %s of domain %s', snapshot.getName(), domain)
+						snapshot.delete(libvirt.VIR_DOMAIN_SNAPSHOT_DELETE_METADATA_ONLY)
+				snapshots.reverse()
+
+				dest_dom = source_dom.migrate3(target_conn, params, flags)
+				# domStat.pd.migration is updated by migration_status()
+				logger.info('Finished migration of domain %s to host %s with flags %x', domain, target_uri, flags)
+				source_node.domains.pop(domain, None)
+
+				for snap_xml in snapshots:
+					snapshot = dest_dom.snapshotCreateXML(snap_xml, libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)
+					logger.info('Added snapshot %s of domain %s', snapshot.getName(), domain)
+			except libvirt.libvirtError as ex:
+				logger.error(ex, exc_info=True)
+
+				for snap_xml in snapshots:
+					try:
+						snapshot = source_dom.snapshotCreateXML(snap_xml, libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)
+						logger.info('Restored snapshot %s of domain %s', snapshot.getName(), domain)
+					except libvirt.libvirtError as ex2:
+						logger.error(_('Failed to restore snapshot after failed migration of domain "%(domain)s": %(error)s'), dict(domain=domain, error=ex2.get_error_message()))
+
+				if ex.get_error_code() == libvirt.VIR_ERR_CPU_INCOMPATIBLE:
+					domStat.pd.migration['msg'] = _('The target host has an incompatible CPU; select a different host or try an offline migration. (%(details)s)') % dict(details=ex.get_str2())
+				else:
+					domStat.pd.migration['msg'] = _('Error migrating domain "%(domain)s": %(error)s') % dict(domain=domain, error=ex.get_error_message())
+				errors.append(domStat.pd.migration['msg'])
 
 		logger.info('Starting migration of domain %s to host %s with flags %x', domain, target_uri, flags)
-		domStat.pd.status = _('Migration started')
-		dest_dom = source_dom.migrate3(target_conn, params, flags)
-		logger.info('Finished migration of domain %s to host %s with flags %x', domain, target_uri, flags)
-		source_node.domains.pop(domain, None)
+		domStat.pd.migration['msg'] = _('Migration started')
 
-		for snap_xml in snapshots:
-			snapshot = dest_dom.snapshotCreateXML(snap_xml, libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)
-			logger.info('Added snapshot %s of domain %s', snapshot.getName(), domain)
+		errors = []  # type: List[str]
+		if flags & libvirt.VIR_MIGRATE_OFFLINE:
+			_migrate(errors)
+		else:
+			thread = threading.Thread(group=None, target=_migrate, name=domain, args=(errors,), kwargs={})
+			thread.start()
+			thread.join(3.0)
+
+		if errors:
+			raise NodeError(errors[0])
 	except libvirt.libvirtError as ex:
-		for snap_xml in snapshots:
-			try:
-				snapshot = source_dom.snapshotCreateXML(snap_xml, libvirt.VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)
-				logger.info('Restored snapshot %s of domain %s', snapshot.getName(), domain)
-			except libvirt.libvirtError as ex2:
-				logger.error(_('Failed to restore snapshot after failed migration of domain "%(domain)s": %(error)s'), domain=domain, error=ex2.get_error_message())
-
-		if ex.get_error_code() == libvirt.VIR_ERR_CPU_INCOMPATIBLE:
-			raise NodeError(_('The target host has an incompatible CPU; select a different host or try an offline migration. (%(details)s)') % {'details': ex.get_str2()})
-		logger.error(ex)
+		logger.error(ex, exc_info=True)
 		raise NodeError(_('Error migrating domain "%(domain)s": %(error)s'), domain=domain, error=ex.get_error_message())
 
 
