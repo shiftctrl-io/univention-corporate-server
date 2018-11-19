@@ -1,4 +1,4 @@
-# portal_frontend
+# portal-frontend
 
 ## Project setup
 ```

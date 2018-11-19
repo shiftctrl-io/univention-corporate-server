@@ -1,56 +1,61 @@
 <template>
     <div>
-        <div class='portal-header'>
-            {{ portal.title }}
-        </div>
-        <div class='portal-body'>
-            <Category
-                v-for='content_e in portal.content'
-                v-bind:category="content_e"
-            />
-        </div>
+        <h1>{{ portal.title_localized }}</h1>
+        <Category v-for="(section, index) in categoryOrdered" v-bind:key="index" v-bind:category="section.category"
+                  v-bind:entries="section.entries"/>
     </div>
 </template>
 
-<script lang='ts'>
-    import {Component, Vue} from 'vue-property-decorator';
-    import services from '../services';
-    import {CategoryData, CategoryType, EntryData, EntryType, PortalData, PortalType} from '../types';
-    import Category from '../components/Category.vue';
+<script>
+// @flow
+import NProgress from 'nprogress'
+import Category from '../components/Category'
 
-    @Component({
-        components: {Category}
-    })
-    export default class Portal extends Vue {
-        private portalO: PortalData = {title_localized: '', content: []};
-        private categories: CategoryData = {};
-        private entries: EntryData = {};
+/*::
+import type {Dn, CategoryDatum, EntryDatum} from "../flow_types";
+*/
 
-        get portal(): PortalType {
-            return {
-                title: this.portalO.title_localized,
-                content: this.portalO.content.map(([cCn, eDns]): [CategoryType, EntryType[]] => {
-                    return [
-                        {title: this.categories[cCn].title_localized},
-                        eDns.map((eDn) => {
-                            return {title: this.entries[eDn].title_localized};
-                        }),
-                    ];
-                }),
-            };
+export default {
+    name: "Portal",
+    components: {Category},
+    data: function () {
+        return {
+            portal: {},
+            categories: {},
+            entries: {}
         }
-
-        protected created() {
-            const promises: [Promise<PortalData>,
-                Promise<CategoryData>, Promise<EntryData>] = [
-                services.getPortal(),
-                services.getCategories(),
-                services.getEntries(),
-            ];
-            Promise.all(promises).then((values) => {
-                [this.portalO, this.categories, this.entries] = values;
-                this.$emit('loading', false);
+    },
+    computed: {
+        categoryOrdered: function () {
+            const result = [];
+            if (!this.portal.content) {
+                return result
+            }
+            this.portal.content.forEach((value) => {
+                result.push({
+                    category: this.categories[value[0]],
+                    entries: value[1].map((e_dn) => {
+                        return this.entries[e_dn]
+                    })
+                });
             });
+            return result;
         }
+    },
+    created: async function () {
+        const result = await Promise.all([
+            this.$service.getPortal(),
+            this.$service.getCategories(),
+            this.$service.getEntries()
+        ]);
+        this.portal = result[0];
+        this.categories = result[1];
+        this.entries = result[2];
+        NProgress.done();
     }
+}
 </script>
+
+<style scoped>
+
+</style>

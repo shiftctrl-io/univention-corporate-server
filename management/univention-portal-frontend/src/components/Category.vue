@@ -1,29 +1,21 @@
 <template>
     <div>
-        <h3>{{ category[0].title }}</h3>
-        <Tile v-for='entry in category[1]'
-            v-bind:entry="entry"
-        />
+        <h2>{{category.display_name_localized}}</h2>
+        <Entry v-for="(entry, index) in entries" v-bind:key="index" v-bind:entry="entry"/>
     </div>
 </template>
 
-<script lang="ts">
-    import {Component, Vue, Prop} from 'vue-property-decorator';
-    import { ContentEntry } from "../types";
-    import Tile from './Tile.vue';
+<script>
+// @flow
 
-    @Component({
-        components: {
-            Tile
-        }
-    })
-    export default class Category extends Vue {
-        @Prop()
-        category!: ContentEntry
-    }
+import Entry from './Entry'
+export default {
+    name: 'Category',
+    props: ['category', 'entries'],
+    components: {Entry}
+}
 </script>
 
+<style scoped>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
 </style>
