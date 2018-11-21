@@ -446,6 +446,13 @@ define([
 			return false;
 		},
 
+		_hasErrorMsg: function(item) {
+			if (item.hasOwnProperty('error') && item.error.hasOwnProperty('msg')) {
+				return !!item.error.msg;
+			}
+			return false;
+		},
+
 		_isMigrating: function(item) {
 			return this._hasMigrationMsg(item) && item.migration.hasOwnProperty('type') && item.migration.type !== 0;
 		},
@@ -1729,6 +1736,9 @@ define([
 					iconName += '-on';
 				} else if ( item.state == 'PAUSED' || ( item.state == 'SHUTOFF' && item.suspended ) || (item.state == 'SUSPENDED')) {
 					iconName += '-paused';
+					if (this._hasErrorMsg(item)) {
+						iconName += '-error';
+					}
 				} else if (item.state == 'TERMINATED') {
 					iconName += '-terminated';
 				} else if (item.state == 'PENDING') {
@@ -1781,6 +1791,10 @@ define([
 					tooltipContent += '<br>';
 					tooltipContent += this._getLocalizedMigrationMsg(item.migration);
 				}
+
+				if (this._hasErrorMsg(item)) {
+					tooltipContent += '<br>';
+					tooltipContent += lang.replace(_('IO error "{reason}" on device "{device}[{srcpath}]"'), item.error);
 				}
 
 				var tooltip = new Tooltip({
