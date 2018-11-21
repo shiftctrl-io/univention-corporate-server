@@ -882,6 +882,8 @@ class Node(PersistentCached):
 				domStat.update(dom, redefined=event == libvirt.VIR_DOMAIN_EVENT_DEFINED)
 			if event in (libvirt.VIR_DOMAIN_EVENT_STARTED, libvirt.VIR_DOMAIN_EVENT_RESUMED):
 				self.write_novnc_tokens()
+			if event != libvirt.VIR_DOMAIN_EVENT_SUSPENDED and detail != libvirt.VIR_DOMAIN_EVENT_SUSPENDED_IOERROR:
+				domStat.pd.error = {}
 		except KeyError:
 			# during migration events are not ordered causal
 			pass
@@ -992,7 +994,13 @@ class Node(PersistentCached):
 				domStat = self.domains[uuid]
 			except LookupError:
 				return
-			domStat.pd.error = _('IO error "%(reason)s" on device "%(device)s"') % dict(reason=reason, device=devalias)
+			error = {
+				'reason': reason,
+				'device': devalias,
+				'srcpath': srcpath,
+			}
+			error['msg'] = _('IO error "%(reason)s" on device "%(device)s[%(srcpath)s]"') % error
+			domStat.pd.error = error
 		except Exception:
 			log.error('%s: Exception handling callback', self.pd.uri, exc_info=True)
 			# don't crash the event handler
@@ -1872,7 +1880,6 @@ def domain_state(uri, domain, state):
 					node.wait_update(domain, stat_key)
 
 			dom_stat.pd.migration.clear()
-			dom_stat.pd.error = ''
 	except KeyError as ex:
 		logger.error("Domain %s not found", ex)
 		raise NodeError(_('Error managing domain "%(domain)s"'), domain=domain)
