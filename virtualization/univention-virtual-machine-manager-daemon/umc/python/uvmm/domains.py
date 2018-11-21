@@ -123,6 +123,7 @@ class Domains(object):
 						'description': domain['description'],
 						'node_available': domain['node_available'],
 						'migration': domain['migration'],
+						'error': domain['error'],
 					})
 			return domain_list
 
