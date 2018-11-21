@@ -595,7 +595,7 @@ class Data_Domain(object):
 		self.available = None  # None: not set, (True|False) -> node availability
 		self.targethosts = None  # List of node hostnames
 		self.migration = {'msg': ''}
-		self.error = ''
+		self.error = {}
 
 
 class Data_Node(object):
