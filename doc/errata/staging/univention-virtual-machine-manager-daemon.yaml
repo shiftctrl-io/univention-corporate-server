@@ -13,4 +13,5 @@ desc: |
    exceeds a certain length.
  * Add support for post-copy migration.
  * Fix file permissions of backup directory.
-bug: [47956,35761,22695,48106,47617,47741]
+ * Fix parsing memory and disk capacity.
+bug: [47956,35761,22695,48106,47617,47741,36661]
