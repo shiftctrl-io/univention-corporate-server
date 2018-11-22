@@ -9,4 +9,5 @@ desc: |
  * Add support for post-copy migration.
  * Report IO errors in UMC frontend.
  * Fix file permissions of backup directory.
-bug: [47617,22695,47741]
+ * Fix parsing memory and disk capacity.
+bug: [47617,22695,47741,36661]
