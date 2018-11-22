@@ -3,6 +3,7 @@ univention-virtual-machine-manager-daemon (7.0.0-13) unstable; urgency=low
   * Bug #47617: Add post-copy migration.
   * Bug #22695: Report IO errors.
   * Bug #47741: Fix file permissions of cache directory.
+  * Bug #36661: Fix parsing memory and disk capacities.
 
  -- Philipp Hahn <hahn@univention.de>  Tue, 30 Oct 2018 19:20:13 +0100
 
