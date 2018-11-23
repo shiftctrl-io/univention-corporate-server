@@ -596,6 +596,7 @@ class Data_Domain(object):
 		self.targethosts = None  # List of node hostnames
 		self.migration = {'msg': ''}
 		self.error = ''
+		self.hyperv = True  # True|False
 
 
 class Data_Node(object):
