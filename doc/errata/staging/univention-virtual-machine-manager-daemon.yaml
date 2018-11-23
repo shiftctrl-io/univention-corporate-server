@@ -14,4 +14,6 @@ desc: |
  * Add support for post-copy migration.
  * Fix file permissions of backup directory.
  * Fix parsing memory and disk capacity.
-bug: [47956,35761,22695,48106,47617,47741,36661]
+ * The target hosts for live migration can now be configured even when the
+   virtual machine is running.
+bug: [47956,35761,22695,48106,47617,47741,36661,48199]
