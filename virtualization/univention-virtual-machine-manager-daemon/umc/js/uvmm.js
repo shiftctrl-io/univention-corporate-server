@@ -599,9 +599,12 @@ define([
 						sortStaticValues: true
 					}],
 					buttons: [{
+						name: 'cancel',
+						label: _('Cancel'),
+						callback: _cleanup
+					}, {
 						name: 'submit',
 						label: _( 'Migrate' ),
-						style: 'float: right;',
 						callback: lang.hitch(this, function() {
 							var nameWidget = form.getWidget('name');
 							if (nameWidget.isValid()) {
@@ -611,10 +614,6 @@ define([
 								_migrate( name );
 							}
 						})
-					}, {
-						name: 'cancel',
-						label: _('Cancel'),
-							callback: _cleanup
 					}],
 					layout: [ 'warning', 'name' ]
 				});
@@ -729,17 +728,16 @@ define([
 				form = new Form({
 					widgets: widgets,
 					buttons: [{
+						name: 'cancel',
+						label: _('Cancel'),
+						callback: _cleanup
+					}, {
 						name: 'submit',
 						label: _( 'Delete' ),
-						style: 'float: right;',
 						callback: function() {
 							_cleanup();
 							_remove();
 						}
-					}, {
-						name: 'cancel',
-						label: _('Cancel'),
-						callback: _cleanup
 					}],
 					layout: layout
 				});
@@ -790,17 +788,16 @@ define([
 			form = new Form({
 				widgets: widgets,
 				buttons: [{
+					name: 'cancel',
+					label: _('Cancel'),
+					callback: _cleanup
+				}, {
 					name: 'submit',
 					label: _( 'Delete' ),
-					style: 'float: right;',
 					callback: function() {
 						_cleanup();
 						_remove();
 					}
-				}, {
-					name: 'cancel',
-					label: _('Cancel'),
-					callback: _cleanup
 				}],
 				layout: layout
 			});
@@ -1061,17 +1058,16 @@ define([
 					content: '<p>' + question + '</p>'
 				}],
 				buttons: [{
+					name: 'cancel',
+					label: _('Cancel'),
+					callback: _cleanup
+				}, {
 					name: 'submit',
 					label: buttonLabel,
-					style: 'float: right;',
 					callback: lang.hitch( this, function() {
 						_cleanup();
 						this._changeState( newState, null, ids, items );
 					} )
-				}, {
-					name: 'cancel',
-					label: _('Cancel'),
-					callback: _cleanup
 				}],
 				layout: [ 'question' ]
 			});
@@ -1225,9 +1221,12 @@ define([
 					]
 				} ],
 				buttons: [{
+					name: 'cancel',
+					label: _('Cancel'),
+					callback: _cleanup
+				}, {
 					name: 'submit',
 					label: _('Create'),
-					style: 'float: right;',
 					callback: function() {
 						var nameWidget = form.getWidget('name');
 						var macWidget = form.getWidget('mac_address');
@@ -1237,10 +1236,6 @@ define([
 							_createClone( name, macWidget.get( 'value' ) );
 						}
 					}
-				}, {
-					name: 'cancel',
-					label: _('Cancel'),
-					callback: _cleanup
 				}],
 				layout: [ 'name', 'mac_address' ]
 			});
