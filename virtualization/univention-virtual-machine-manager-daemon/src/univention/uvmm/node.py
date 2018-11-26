@@ -890,7 +890,8 @@ class Node(PersistentCached):
 		log = logger.getChild('livecycle')
 		try:
 			log.debug(
-				"Domain %s(%s) Event %s Details %s",
+				"Node %s Domain %s(%s) Event %s Details %s",
+				self.pd.name,
 				dom.name(),
 				dom.ID(),
 				DOM_EVENTS[event],
@@ -928,7 +929,8 @@ class Node(PersistentCached):
 		log = logger.getChild('reboot')
 		try:
 			log.debug(
-				"Domain %s(%s)",
+				"Node %s Domain %s(%s)",
+				self.pd.name,
 				dom.name(),
 				dom.ID(),
 			)
@@ -960,7 +962,8 @@ class Node(PersistentCached):
 		log = logger.getChild('migration')
 		try:
 			log.debug(
-				"Domain %s(%s) iter=%d",
+				"Node %s Domain %s(%s) iter=%d",
+				self.pd.name,
 				dom.name(),
 				dom.ID(),
 				iteration,
@@ -989,7 +992,8 @@ class Node(PersistentCached):
 		log = logger.getChild('job')
 		try:
 			log.debug(
-				"Domain %s(%s) stats=%r",
+				"Node %s Domain %s(%s) stats=%r",
+				self.pd.name,
 				dom.name(),
 				dom.ID(),
 				stats,
@@ -1012,7 +1016,8 @@ class Node(PersistentCached):
 		log = logger.getChild('io')
 		try:
 			log.debug(
-				"Domain %s(%s) dev=%s[%s] action=%s reason=%s",
+				"Node %s Domain %s(%s) dev=%s[%s] action=%s reason=%s",
+				self.pd.name,
 				dom.name(),
 				dom.ID(),
 				devalias,
