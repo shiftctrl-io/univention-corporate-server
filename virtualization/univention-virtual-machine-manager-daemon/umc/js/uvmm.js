@@ -34,6 +34,7 @@ define([
 	"dojo/_base/array",
 	"dojo/_base/kernel",
 	"dojo/_base/window",
+	"dojo/dom-class",
 	"dojo/window",
 	"dojo/string",
 	"dojo/query",
@@ -76,7 +77,7 @@ define([
 	"umc/i18n!umc/modules/uvmm",
 	"xstyle/css!./uvmm.css"
 ], function(
-	declare, lang, array, kernel, win, dojoWindow, string, query, Deferred, topic, on, aspect,
+	declare, lang, array, kernel, win, domClass, dojoWindow, string, query, Deferred, topic, on, aspect,
 	all, has, entities, Menu, MenuItem, ProgressBar, Dialog, _TextBoxMixin,
 	tools, dialog, Module, Page, Form, Grid, SearchForm, Tree, Tooltip, Text, ContainerWidget,
 	CheckBox, ComboBox, TextBox, Button, GridUpdater, TreeModel, DomainPage, DomainWizard,
@@ -1802,6 +1803,27 @@ define([
 
 				widget.own(on(this._grid._grid, 'contextmenu', function() {
 					tooltip.close();
+				}));
+
+				// enable contextmenu under tooltip
+				var contextCatcher = null;
+				widget.own(on(tooltip, 'show', lang.hitch(this, function() {
+					contextCatcher = on(document.body, 'contextmenu', lang.hitch(this, function(evt) {
+						var onTooltip = array.some(evt.path, function(element) {
+							return domClass.contains(element, "dijitTooltip");
+						});
+						if (onTooltip) {
+							evt.preventDefault();
+							tooltip.close();
+							this._grid._contextMenu._openMyself(evt);
+						}
+					}));
+					widget.own(contextCatcher);
+				})));
+				widget.own(on(tooltip, 'hide close', function() {
+					if (contextCatcher.hasOwnProperty('remove')) {
+						contextCatcher.remove();
+					}
 				}));
 
 
