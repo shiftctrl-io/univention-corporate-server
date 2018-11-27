@@ -1804,6 +1804,14 @@ define([
 					tooltip.close();
 				}));
 
+				// enable contextmenu under tooltip
+				widget.own(on(tooltip, 'show', lang.hitch(this, function() {
+					widget.own(on.once(document.body, 'contextmenu', lang.hitch(this, function(evt) {
+						evt.preventDefault();
+						this._grid._contextMenu._openMyself(evt);
+					})));
+				})));
+
 
 				// destroy the tooltip when the widget is destroyed
 				tooltip.connect( widget, 'destroy', 'destroy' );
