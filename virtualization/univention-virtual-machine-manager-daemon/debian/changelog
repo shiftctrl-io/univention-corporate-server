@@ -1,3 +1,9 @@
+univention-virtual-machine-manager-daemon (7.0.0-14) unstable; urgency=low
+
+  * Bug #48106: VNC only supports password up to 8 characters
+
+ -- Philipp Hahn <hahn@univention.de>  Tue, 27 Nov 2018 17:10:50 +0100
+
 univention-virtual-machine-manager-daemon (7.0.0-13) unstable; urgency=low
 
   * Bug #47956: Fix disk target dev name assignment

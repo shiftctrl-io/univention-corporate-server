@@ -248,7 +248,8 @@ define([
 				}, {
 					name: 'vnc_password',
 					type: PasswordBox,
-					label: _('VNC password')
+					label: _('VNC password'),
+					maxLength: 8
 				}, {
 					name: 'kblayout',
 					type: ComboBox,
