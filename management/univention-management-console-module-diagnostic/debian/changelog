@@ -1,3 +1,9 @@
+univention-management-console-module-diagnostic (4.0.1-16) unstable; urgency=medium
+
+  *Bug #47649: Fix spelling mistake
+
+ -- Julia Bremer <bremer@knut.univention.de>  Thu, 29 Nov 2018 15:43:32 +0100
+
 univention-management-console-module-diagnostic (4.0.1-15) unstable; urgency=medium
 
   * Bug #47649: Adjusted wording 
