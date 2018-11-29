@@ -63,12 +63,36 @@ $bar-background-color ?= $secondary-color								// MenuBar, Toolbar, action bar
 $pane-background-color ?= $container-background-color					// Background color of Accordion panes, Dialogs, etc.
 $popup-background-color ?= $container-background-color					// Background for Dialog.   TODO: currently use for ColorPalette, maybe should change.
 
+$category-color-users    ?= hsl(48, 100%, 49%)
+$category-color-devices  ?= hsl(6, 100%, 60%)
+$category-color-domain   ?= hsl(213, 83%, 47%)
+$category-color-system   ?= hsl(272, 65%, 61%)
+$category-color-software ?= hsl(98, 90%, 41%)
+$category-color-_favorites_ ?= rgb(70, 190, 240)
 
-$category-color-users    ?= #fac800
-$category-color-devices  ?= #dd4632
-$category-color-domain   ?= #146edc
-$category-color-system   ?= #a05adc
-$category-color-software ?= #50c80a
+// material typography
+$material-text-high-emphasis-alpha ?= 0.87
+$material-text-medium-emphasis-alpha ?= 0.6
+$material-text-disabled-alpha ?= 0.3
+$material-text-dark-high = rgba(0, 0, 0, $material-text-high-emphasis-alpha)
+$material-text-dark-medium = rgba(0, 0, 0, $material-text-medium-emphasis-alpha)
+$material-text-dark-disabled = rgba(0, 0, 0, $material-text-disabled-alpha)
+$material-text-light-high = rgba(255, 255, 255, $material-text-high-emphasis-alpha)
+$material-text-light-medium = rgba(255, 255, 255, $material-text-medium-emphasis-alpha)
+$material-text-light-disabled = rgba(255, 255, 255, $material-text-disabled-alpha)
+
+// material spacing
+$material-grid8 ?= 8px
+$material-grid4 ?= 4px
+material-grid(multiplicant, use4dp=false)
+	spacing = $material-grid8
+	if use4dp
+		spacing = $material-grid4
+	spacing * multiplicant
+
+
+// umcHeader
+$header-height ?= $material-grid8 * 6
 
 // Buttons
 $button-border-color ?=  $focused-border-color								// Border for (stand-alone) buttons in normal, hovered, or active state
