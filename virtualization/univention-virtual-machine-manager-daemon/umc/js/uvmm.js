@@ -152,6 +152,9 @@ define([
 		// internal Deferred to control the rate of updating _currentWidth
 		_resizeDeferred: null,
 
+		// used to catch context events on the tooltip
+		_contextCatcher: null,
+
 		uninitialize: function() {
 			this.inherited(arguments);
 
@@ -1806,26 +1809,24 @@ define([
 				}));
 
 				// enable contextmenu under tooltip
-				var contextCatcher = null;
 				widget.own(on(tooltip, 'show', lang.hitch(this, function() {
-					contextCatcher = on(document.body, 'contextmenu', lang.hitch(this, function(evt) {
+					if (!!this._contextCatcher && this._contextCatcher.hasOwnProperty('remove')) {
+						this._contextCatcher.remove();
+					}
+					this._contextCatcher = on.once(document.body, 'contextmenu', lang.hitch(this, function(evt) {
 						var onTooltip = array.some(evt.path, function(element) {
 							return domClass.contains(element, "dijitTooltip");
 						});
 						if (onTooltip) {
 							evt.preventDefault();
 							tooltip.close();
+							this._grid._grid.clearSelection();
+							this._grid._grid.select(item);
 							this._grid._contextMenu._openMyself(evt);
 						}
 					}));
-					widget.own(contextCatcher);
+					widget.own(this._contextCatcher);
 				})));
-				widget.own(on(tooltip, 'hide close', function() {
-					if (contextCatcher.hasOwnProperty('remove')) {
-						contextCatcher.remove();
-					}
-				}));
-
 
 				// destroy the tooltip when the widget is destroyed
 				tooltip.connect( widget, 'destroy', 'destroy' );
