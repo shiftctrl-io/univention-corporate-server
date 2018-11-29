@@ -133,7 +133,9 @@ define([
 				'<span class="tree-description" title="{label}">{label}</span>',
 				{label: label}
 			);
-			label += '<span class="node-ressources">CPU | Mem<span>';
+			if (groupname === 'default') {
+				label += '<span class="node-ressources">CPU | Mem<span>';
+			}
 			return label;
 		},
 
@@ -147,7 +149,10 @@ define([
 					if (this._nodeHasRessources(node)) {
 						node.label = this._getRessourceNodeLabel(node);
 					} else {
-						node.label = this._cutDomain(node.label);
+						node.label = lang.replace(
+							'<span class="tree-description" title="{label}">{label}</span>',
+							{label: this._cutDomain(node.label)}
+						);
 					}
 					return node;
 				})));
@@ -158,7 +163,7 @@ define([
 			var hasRessources = array.every(['cpuUsage', 'memUsed', 'memAvailable'], function(ressource) {
 				return node.hasOwnProperty(ressource);
 			});
-			return hasRessources && node.memAvailable !== 0;
+			return hasRessources && node.memAvailable !== 0 && node.available;
 		},
 
 		_getRessourceNodeLabel: function(node) {
