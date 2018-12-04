@@ -871,6 +871,8 @@ define([
 			}, this);
 
 			var itemsSelected = nItems > 0;
+			domClass.toggle(this._header.domNode, 'umcGridHeader--items-selected', itemsSelected);
+			domClass.toggle(this._toolbar.domNode, 'dijitDisplayNone', itemsSelected);
 			domClass.toggle(this._contextActionsToolbar.domNode, 'dijitDisplayNone', !itemsSelected);
 		},
 
