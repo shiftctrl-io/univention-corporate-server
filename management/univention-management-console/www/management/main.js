@@ -841,9 +841,6 @@ define([
 				containerNode: dom.byId('umcTopContainer'),
 				'class': 'umcTopContainer'
 			});
-			if (has('trident')) {
-				domClass.add(this._topContainer.domNode, 'umcTopContainer--layout-IE');
-			}
 
 			// module (and overview) container
 			this._tabContainer = new StackContainer({
