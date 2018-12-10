@@ -520,7 +520,7 @@ define([
 
 		_setupModuleTabs: function() {
 			this._moreTabsDropDownButton = new DropDownButton({
-				'class': 'umcMoreTabsDropDownButton invisible',
+				'class': 'umcMoreTabsDropDownButton umcFlatButton umcMoreTabsDropDownButton--invisible',
 				iconClass: '', // prevent 'dijitNoIcon' to be set
 				dropDown: new Menu({
 					'class': 'umcMoreTabsDropDownMenuContent'
@@ -598,7 +598,7 @@ define([
 				tabsWidth = domGeometry.getMarginBox(this._tabController.domNode).w;
 			}
 			if (tabIndexOffset > 0) {
-				domClass.remove(this._moreTabsDropDownButton.domNode, 'invisible');
+				domClass.remove(this._moreTabsDropDownButton.domNode, 'umcMoreTabsDropDownButton--invisible');
 			}
 		},
 
@@ -612,7 +612,7 @@ define([
 			array.forEach(extraTabs, function(tab) {
 				domClass.add(tab.domNode, 'dijitDisplayNone');
 			});
-			domClass.add(this._moreTabsDropDownButton.domNode, 'invisible');
+			domClass.add(this._moreTabsDropDownButton.domNode, 'umcMoreTabsDropDownButton--invisible');
 		},
 
 		_setupRightHeader: function() {
@@ -625,7 +625,8 @@ define([
 				this.setupSearchField();
 			}
 			this._headerRight.addChild(new NotificationDropDownButton({
-				iconClass: 'umcNotificationIcon'
+				iconClass: 'umcNotificationIcon',
+				'class': 'umcFlatButton'
 			}));
 			this._setupMenu();
 			this._headerRight.addChild(new ContainerWidget({
@@ -652,18 +653,13 @@ define([
 
 		setupBackToOverview: function() {
 			this._backToOverviewButton = new Button({
-				'class': 'umcBackToOverview',
+				'class': 'umcBackToOverview umcFlatButton',
+				iconClass: 'umcBackToOverview__icon',
 				onClick: function() {
 					require('umc/app').switchToOverview();
 				}
 			});
 			this.addChild(this._backToOverviewButton);
-		},
-
-		toggleBackToOverviewVisibility: function(visible) {
-			if (this._backToOverviewButton) {
-				this._backToOverviewButton.set('visible', visible);
-			}
 		},
 
 		setupHelpMenu: function() {
@@ -856,7 +852,7 @@ define([
 			// the header
 			this._header = new UmcHeader({
 				id: 'umcHeader',
-				'class': 'umcHeader',
+				'class': 'umcHeader umcHeader--umc',
 				_tabController: this._tabController,
 				_tabContainer: this._tabContainer
 			});
@@ -896,7 +892,6 @@ define([
 			// register events for closing and focusing
 			this._tabContainer.watch('selectedChildWidget', lang.hitch(this, function(name, oldModule, newModule) {
 				this._lastSelectedChild = oldModule;
-				this._updateHeaderColor(oldModule, newModule);
 				this._updateTopContainerCSSClasses(oldModule, newModule);
 
 				if (!newModule.moduleID) {
@@ -908,7 +903,6 @@ define([
 					this._updateStateHash();
 				}
 				var overviewShown = (newModule === this._overviewPage);
-				this._header.toggleBackToOverviewVisibility(tools.status('numOfTabs') > 0);
 				domClass.toggle(baseWin.body(), 'umcOverviewShown', overviewShown);
 				domClass.toggle(baseWin.body(), 'umcOverviewNotShown', !overviewShown);
 				if (!tools.status('mobileView')) {
@@ -921,7 +915,6 @@ define([
 			aspect.before(this._tabContainer, 'removeChild', lang.hitch(this, function(module) {
 				this._updateNumOfTabs(-1);
 				topic.publish('/umc/actions', module.moduleID, module.moduleFlavor, 'close');
-				this._header.toggleBackToOverviewVisibility(tools.status('numOfTabs') > 0);
 
 				if (module === this._tabContainer.get('selectedChildWidget')) {
 					if (array.indexOf(this._tabContainer.getChildren(), this._lastSelectedChild) !== -1) {
@@ -931,20 +924,6 @@ define([
 					}
 				}
 			}));
-		},
-
-		_updateHeaderColor: function(oldModule, newModule) {
-			var headerColorCss;
-			// remove color of oldModule if it was not the overview
-			if (oldModule && oldModule.moduleID) {
-				headerColorCss = lang.replace('headerColor-{categoryColor}', oldModule);
-				domClass.remove(this._header.domNode, headerColorCss);
-			}
-			// add color of newModule if it is not the overview
-			if (newModule.moduleID) {
-				headerColorCss = lang.replace('headerColor-{categoryColor}', newModule);
-				domClass.add(this._header.domNode, headerColorCss);
-			}
 		},
 
 		_updateTopContainerCSSClasses: function(oldModule, newModule) {
@@ -1620,10 +1599,12 @@ define([
 				domClass.add(menuTab.domNode, lang.replace('color-{0}', [module_flavor_css]));
 			}
 
-			if (array.some(this._insertedTabStyles, function(id) { return id === module_flavor_css; })) {
-				// do not insert the same styles more than once
-				return;
-			}
+			var styleAlreadyInserted = array.some(this._insertedTabStyles, function(id) {
+				return id === module_flavor_css;
+			});
+			if (styleAlreadyInserted) {
+ 				return;
+ 			}
 
 			this._insertedTabStyles.push(module_flavor_css);
 
@@ -1631,18 +1612,15 @@ define([
 			var defaultClasses = '.umc .dijitTabContainerTop-tabs .dijitTab';
 			var cssProperties = lang.replace('background-color: {0}; background-image: none; filter: none;', [color]);
 
-			// color the umcHeader
-			styles.insertCssRule(lang.replace('.umc .umcHeader.headerColor-{0}', [module.category_for_color]), cssProperties);
-
-			// color border and set color of NotificationDropDownButton notificationCountNode
-			styles.insertCssRule(lang.replace('.umc .umcHeader.headerColor-{0} .umcNotificationDropDownButton .notificationCountNode', [tab.categoryColor]), lang.replace('border-color: {0}; color: {0};', [color]));
-
 			// color the tabs in the tabs dropDownMenu of the umcHeaer
 			styles.insertCssRule(lang.replace('.umc .umcMoreTabsDropDownMenuContent .dijitMenuItemHover.color-{0},.umc .umcMoreTabsDropDownMenuContent .dijitMenuItemSelected.color-{0}', [module_flavor_css]), lang.replace('background-color: {0}', [color]));
 
 			// color module tabs
-			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitHover', [defaultClasses, module_flavor_css]), cssProperties);
-			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitTabChecked', [defaultClasses, module_flavor_css]), cssProperties);
+			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitTabChecked', [defaultClasses, module_flavor_css]), lang.replace('background-color: {0};', [color]));
+			var dijitTabHoverColor = dojo.blendColors(dojo.colorFromHex(color), dojo.colorFromHex('#000000'), 0.05);
+			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitTabHover',   [defaultClasses, module_flavor_css]), lang.replace('background-color: {0};', [dijitTabHoverColor]));
+			var dijitTabActiveColor = dojo.blendColors(dojo.colorFromHex(color), dojo.colorFromHex('#000000'), 0.1);
+			styles.insertCssRule(lang.replace('{0}.umcModuleTab-{1}.dijitTabActive',  [defaultClasses, module_flavor_css]), lang.replace('background-color: {0};', [dijitTabActiveColor]));
 
 			// color the grid header when items are selected
 			var gridHeaderColor = dojo.blendColors(dojo.colorFromHex(color), dojo.colorFromHex('#ffffff'), 0.7);
