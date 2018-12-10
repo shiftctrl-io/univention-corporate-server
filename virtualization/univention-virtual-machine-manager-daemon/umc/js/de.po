@@ -354,7 +354,7 @@ msgstr "Zu Postcopymigation wechseln"
 msgid ""
 "Migration in progress since {time_elapsed} sec, iteration {memory_iteration}"
 msgstr ""
-"Migration gestartet vom {time_elapsed} sec, Iteration {memory_iteration}"
+"Migration gestartet vor {time_elapsed} sec, Iteration {memory_iteration}"
 
 #: umc/js/uvmm/TreeModel.js:95
 msgid "Cloud connections"
