@@ -284,11 +284,13 @@ class AutoCallCommand(object):
 
     def __enter__(self):
         if self.enter_cmd:
+            print('Running: {!r}.'.format(self.enter_cmd))
             subprocess.call(self.enter_cmd, stdout=self.pipe_stdout, stderr=self.pipe_stderr)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.exit_cmd:
+            print('Running: {!r}.'.format(self.exit_cmd))
             subprocess.call(self.exit_cmd, stdout=self.pipe_stdout, stderr=self.pipe_stderr)
 
 
