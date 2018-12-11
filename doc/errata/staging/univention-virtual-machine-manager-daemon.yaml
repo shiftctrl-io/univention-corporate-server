@@ -6,15 +6,11 @@ src: univention-virtual-machine-manager-daemon
 fix: 7.0.0-16A~4.3.0.201811281603
 desc: |
  This update addresses the following issues:
- * Fix assignment of target device name for newly added disks.
- * Drop corrupt cache files on errors.
- * Report IO errors in UMC frontend.
- * Show a warning if the entered VNC password for a virtual machine 
-   exceeds a certain length.
  * Add support for post-copy migration.
  * Fix file permissions of backup directory.
  * Fix parsing memory and disk capacity.
  * The target hosts for live migration can now be configured even when the
    virtual machine is running.
  * Fix tooltips preventing button clicks.
-bug: [47956,35761,22695,48106,47617,47741,36661,48199, 45498]
+ * Add Hyper-V Enlightment for Windows VMs.
+bug: [47617, 47741, 36661, 48199, 45498, 48024]
