@@ -1,6 +1,6 @@
 product: ucs
 release: "4.3"
-version: [2]
+version: [3]
 scope: ucs_4.3-0-errata4.3-2
 src: univention-virtual-machine-manager-daemon
 fix: 7.0.0-16A~4.3.0.201811281603
@@ -16,4 +16,5 @@ desc: |
  * Fix parsing memory and disk capacity.
  * The target hosts for live migration can now be configured even when the
    virtual machine is running.
-bug: [47956,35761,22695,48106,47617,47741,36661,48199]
+ * Fix tooltips preventing button clicks.
+bug: [47956,35761,22695,48106,47617,47741,36661,48199, 45498]
