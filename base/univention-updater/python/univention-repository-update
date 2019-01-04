@@ -45,6 +45,10 @@ import univention.updater.repository as urepo
 from univention.updater.mirror import UniventionMirror, makedirs
 from univention.updater.errors import UpdaterException, VerificationError
 from univention.updater.locking import UpdaterLock
+try:
+    from typing import IO  # noqa F401
+except ImportError:
+    pass
 
 configRegistry = ConfigRegistry()
 configRegistry.load()
@@ -192,6 +196,59 @@ def update_net(options):
             print >> ver, 'VERSION=%d.%d' % (min_version.major, min_version.minor)
             print >> ver, 'PATCHLEVEL=%d' % (min_version.patchlevel,)
 
+    if options.pxe:
+        copy_pxe(mirror, options.teefile)
+
+
+def copy_pxe(mirror, out):  # type: (UniventionMirror, IO) -> None
+    '''
+    setup network installation (PXE)
+
+    :param mirror UniventionMirror: an UniventionMirror instance.
+    :param out: File for error output.
+    '''
+    if mirror.current_version.major < 4:
+        print >> out, 'WARNING: The usage of this DVD for PXE reinstallation is not possible.'
+        print >> out, '         Please use an UCS installation DVD with UCS 4.0-0 or later.'
+        return
+    if mirror.server.baseurl.hostname != 'updates.software-univention.de':
+        print >> out, 'WARNING: Download of PXE files from %s may not work' % (mirror.server.baseurl.public())
+
+    version = mirror.get_ucs_version()
+    pxedir = '/var/lib/univention-client-boot'
+    installerdir = os.path.join(pxedir, 'installer', version)
+    makedirs(installerdir)
+
+    # copy kernel and initrd to /var/lib/univention-client-boot/installer/<major>.<minor>-<patchlevel>/
+    # and create/refresh symlinks in /var/lib/univention-client-boot/ to these files
+    arch = mirror.architectures[0]
+    for fn in ['linux', 'initrd.gz']:
+        dstfn = os.path.join(installerdir, fn)
+        if os.path.exists(dstfn):
+            continue
+
+        uri = '/'.join(('pxe', version, arch, 'gtk', 'debian-installer', arch, fn))
+        try:
+            code, size, content = mirror.server.access(None, filename=uri, get=True)
+        except UpdaterException as ex:
+            print >> out, 'WARNING: Failed download %s: %s' % (uri, ex)
+            continue
+
+        try:
+            with open(dstfn, 'w') as stream:
+                stream.write(content)
+        except EnvironmentError as ex:
+            print >> out, 'WARNING: Failed to write %s: %s' % (dstfn, ex)
+            continue
+
+        symlinkfn = os.path.join(pxedir, fn)
+        try:
+            if os.path.islink(symlinkfn):
+                os.remove(symlinkfn)
+            os.symlink(os.path.relpath(dstfn, pxedir), symlinkfn)
+        except EnvironmentError as ex:
+            print >> out, 'WARNING: Failed to update %s: %s' % (symlinkfn, ex)
+
 
 def parse_args():
     for mount_point_default in ('/cdrom', '/media/cdrom', '/media/cdrom0'):
@@ -227,6 +284,9 @@ def parse_args():
         '-u', '--updateto', action='store',
         dest='update_to', default='',
         help='if given the repository is updated to the specified version but not higher')
+    parser.add_option(
+        '--pxe', '-p', action='store_true',
+        help='download PXE network installer files')
 
     (options, arguments) = parser.parse_args()
 
