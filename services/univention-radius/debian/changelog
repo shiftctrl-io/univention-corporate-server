@@ -1,3 +1,13 @@
+univention-radius (6.0.1-2) unstable; urgency=medium
+
+  * Updates for ucs 4.4
+    Bug #46018: Improve logging and import ucs@school access check if
+      available.
+    Bug #46561: Move clients conf example
+    Bug #48460: Use passlib for des encryption
+
+ -- Jürn Brodersen <brodersen@univention.de>  Mon, 14 Jan 2019 14:16:41 +0100
+
 univention-radius (6.0.1-1) unstable; urgency=medium
 
   * Bug #46969: bindpwdfile support
