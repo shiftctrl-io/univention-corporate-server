@@ -1,0 +1,4 @@
+access to attrs=univentionRadiusClientSharedSecret
+	   by group/univentionGroup/uniqueMember.expand="cn=DC Backup Hosts,cn=groups,@%@ldap/base@%@" read
+	   by set="user/univentionService & [RADIUS]" read
+	   by * none
