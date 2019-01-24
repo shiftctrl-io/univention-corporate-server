@@ -283,6 +283,10 @@ fi
 # read permissions ==> univentionService=RADIUS has been added in this join script.
 /usr/share/univention-directory-listener/resync_objects.py --update --filter 'objectClass=univentionRadiusClient'
 
+# create initial version/update current version of clients.univention.conf
+/usr/sbin/univention-radius-update-clients-conf
+ucr commit /etc/freeradius/3.0/radiusd.conf
+
 # In case radius was installed during systemsetup the machine secret is missing in the radius ldap module
 univention-config-registry commit /etc/freeradius/3.0/mods-available/ldap
 systemctl restart freeradius
