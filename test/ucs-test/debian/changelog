@@ -1,3 +1,10 @@
+ucs-test (9.0.0-5) unstable; urgency=medium
+
+  * Bug #46018: additional tests for radius: groups, groups in groups, mac
+  	whitelisting
+
+ -- Jannik Ahlers <ahlers@univention.de>  Mon, 28 Jan 2019 11:15:57 +0100
+
 ucs-test (9.0.0-4) unstable; urgency=medium
 
   * Bug #48421: use DSDB_CONTROL_REPLICATED_UPDATE_OID control in samba modify
