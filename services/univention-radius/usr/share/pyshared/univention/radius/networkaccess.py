@@ -154,7 +154,6 @@ class NetworkAccess(object):
 		return self.build_access_dict(users)
 
 	def get_station_network_access(self, mac_address):
-		mac_address = ':'.join([byte.encode('hex') for byte in mac_address])
 		stations = self.ldapConnection.search(filter=str(univention.admin.filter.expression('macAddress', mac_address)), attr=['univentionNetworkAccess'])
 		return self.build_access_dict(stations)
 
