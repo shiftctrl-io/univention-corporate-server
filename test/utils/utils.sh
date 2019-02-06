@@ -57,6 +57,13 @@ basic_setup () {
 	if [ -f /var/cache/univention-system-setup/profile.bak ] ; then
 		mv /var/cache/univention-system-setup/profile.bak /var/cache/univention-system-setup/profile
 	fi
+	# Bug #47233: ssh connection stuck on reboot
+	g='/etc/pam.d/common-session' t='/etc/univention/templates/files/etc/pam.d/common-session.d/10univention-pam_common'
+	grep -Fqs 'pam_systemd.so' "$g" || {
+		grep -Fqa 'pam_systemd.so' "$t" ||
+			echo "session optional        pam_systemd.so" >>"$t"
+		ucr commit "$g"
+	}
 }
 
 rotate_logfiles () {
