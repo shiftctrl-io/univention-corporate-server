@@ -35,13 +35,15 @@ define([
 	"dojo/json"
 ], function(lang, xhr, ioQuery, json) {
 	return {
-		load: function(id, require, load) {
+		load: function(id, require, load, headers) {
 			// id: String
 			//		Path to the resource
 			// require: Function
 			//		Object that include the function toUrl with given id returns a valid URL from which to load the text.
 			// load: Function
 			//		Callback function which will be called, when the loading finished.
+			// headers: Object
+			//		Object specifying the headers for the request
 
 			// id is something like (path is always absolute):
 			//   "path/to/data.json"
@@ -59,9 +61,12 @@ define([
 				return {};
 			};
 
+			var request_headers = headers || {'Content-Type': 'application/x-www-form-urlencoded'};
+
 			var params = lang.mixin({
 				handleAs: 'json',
-				timeout: 10000
+				timeout: 10000,
+				headers: request_headers
 			}, _getCustomParams());
 
 			xhr.get(url, params).then(function(data) {
