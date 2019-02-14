@@ -408,9 +408,16 @@ define([
 		// Maybe it would be better to save changes made after the
 		// initial load into a cache and if cached data is available
 		// use that instead of the initial portal.json data
-		_reloadPortalContent: function() {
+		_reloadPortalContent: function(admin_mode) {
 			var loadDeferred = new Deferred();
 
+			var headers = null;
+			if (admin_mode) {
+				headers = {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'X-Univention-Portal-Admin-Mode': 'yes'
+				}
+			}
 			var waitedTime = 0;
 			var waitTime = 200;
 
@@ -434,7 +441,7 @@ define([
 						} else {
 							_load();
 						}
-					});
+					}, headers);
 				}, waitTime);
 				waitedTime += waitTime;
 			};
@@ -1310,7 +1317,11 @@ define([
 				connectId: [portalEditFloatingButton],
 				position: ['above']
 			});
-			on(portalEditFloatingButton, 'click', lang.hitch(this, '_render', portalTools.RenderMode.EDIT));
+			on(portalEditFloatingButton, 'click', lang.hitch(this, function() {
+				this._reloadPortalContent(true).then(lang.hitch(this, function() {
+					this._render(portalTools.RenderMode.EDIT);
+				}))
+			}));
 		},
 
 		_createToolbar: function() {
