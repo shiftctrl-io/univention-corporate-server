@@ -1371,7 +1371,7 @@ def _domain_backup(dom, save=True):
 	Save domain definition to backup file.
 
 	:param libvirt.virDomain dom: libvirt domain instance.
-	:param bool save: `True` to create a backup of the previous desciption (e.g. before deleing), `False` to save the current desciption.
+	:param bool save: `True` to create a backup of the previous description (e.g. before deleing), `False` to save the current description.
 	"""
 	suffix = '.xml.save' if save else '.xml'
 
