@@ -307,13 +307,12 @@ class Instance(Base):
 
 			widget_description = {
 				'id': propname,
-				'label': label_overwrites[propname] if propname in label_overwrites else prop.short_description,
+				'label': label_overwrites.get(propname, prop.short_description),
 				'description': prop.long_description,
 				'syntax': prop.syntax.name,
 				'size': prop.size or prop.syntax.size,
-				#  'required': bool(prop.required),
-				#  'editable': bool(prop.may_change),
-				#  'readonly': not bool(prop.editable),
+				'required': bool(prop.required),
+				'readonly': not bool(prop.editable),
 				'multivalue': bool(prop.multivalue),
 			}
 			widget_description.update(widget(prop.syntax, widget_description))
@@ -377,6 +376,11 @@ class Instance(Base):
 				except (udm_errors.valueError, udm_errors.valueInvalidSyntax) as e:
 					isValid = False
 					message = str(e)
+
+			_isValid = all(isValid) if type(isValid) == list else isValid
+			if _isValid and prop.required and not value:
+				isValid = False
+				message = _('This value is required')
 			res[propname] = {
 				'isValid': isValid,
 				'message': message,
@@ -393,9 +397,11 @@ class Instance(Base):
 		if self.is_blacklisted(username):
 			raise ServiceForbidden()
 
+		user_attributes = [attr.strip() for attr in ucr.get('self-service/udm_attributes', '').split(',')]
 		user = self.get_udm_user_by_dn(userdn=dn, admin=True)
 		for propname, value in attributes.items():
-			user[propname] = value
+			if propname in user_attributes:
+				user[propname] = value
 		user.modify()
 		return _("Successfully changed your contact data.")
 

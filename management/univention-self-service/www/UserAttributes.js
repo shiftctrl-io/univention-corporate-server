@@ -188,7 +188,7 @@ define([
 		_createUserAttributesStep: function(data) {
 			this._userAttributesStep = put(this.steps, 'li.step div.stepLabel', _('Customize your contact data'), '<');
 
-			var widgetDescriptions = data.widget_descriptions;
+			var widgetDescriptions = this._prepareWidgets(data.widget_descriptions);
 			render.requireWidgets(widgetDescriptions)
 				.then(lang.hitch(this, function() {
 					this._form = new Form({
@@ -220,6 +220,21 @@ define([
 					}));
 					this._form.startup();
 				}));
+		},
+
+		// TODO
+		// this is duplicated in udm/DetailPage.js
+		//
+		// move this into management/univention-management-console-module-udm/umc/python/udm/syntax.py ?
+		// or render.js ?
+		_prepareWidgets: function(props) {
+			array.forEach(props, function(iprop) {
+				if (iprop.readonly) {
+					iprop.disabled = true;
+				}
+			});
+
+			return props;
 		},
 
 		_setUserAttributes: function() {
