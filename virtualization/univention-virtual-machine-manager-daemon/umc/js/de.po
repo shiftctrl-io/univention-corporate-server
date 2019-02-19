@@ -1458,7 +1458,7 @@ msgstr ""
 
 #: umc/js/uvmm/InterfaceWizard.js:84
 msgid ""
-"The source is the name of the network interface on the phyiscal server that "
+"The source is the name of the network interface on the physical server that "
 "is configured for bridging. By default it is br0."
 msgstr ""
 "Die Quelle ist der Name der Netzwerkschnittstelle des physikalischen Server "
