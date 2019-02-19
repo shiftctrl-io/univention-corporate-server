@@ -159,7 +159,7 @@ define([
 
 		standbyDuring: function(deferred, content) {
 			if (!deferred.isFulfilled()) {
-				// dont standby if already finished
+				// don't standby if already finished
 				var id = this._standbyDuringID += 1;
 				var thisEntry = [id, content];
 				this._standbyDuringQueue.push(thisEntry);

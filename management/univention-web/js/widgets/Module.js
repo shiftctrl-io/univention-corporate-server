@@ -93,7 +93,7 @@ define([
 		},
 
 		_setTitleAttr: function(title) {
-			// dont set html attribute title
+			// don't set html attribute title
 			// (looks weird)
 			this._set('title', title);
 			if (this._top) {
