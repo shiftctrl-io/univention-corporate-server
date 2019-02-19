@@ -287,7 +287,7 @@ zend_object_value php_krb5_ticket_object_new(zend_class_entry *ce TSRMLS_DC)
 	object = emalloc(sizeof(krb5_ccache_object));
 	memset(object, 0, sizeof(krb5_ccache_object));
 
-	/* intialize context */
+	/* initialize context */
 	if((ret = krb5_init_context(&object->ctx))) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Cannot initialize Kerberos5 context");
 		efree(object);		
@@ -326,7 +326,7 @@ zend_object *php_krb5_ticket_object_new(zend_class_entry *ce TSRMLS_DC)
 
 	object = ecalloc(1, sizeof(krb5_ccache_object) + zend_object_properties_size(ce));
 
-	/* intialize context */
+	/* initialize context */
 	if((ret = krb5_init_context(&object->ctx))) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Cannot initialize Kerberos5 context");
 		efree(object);		
