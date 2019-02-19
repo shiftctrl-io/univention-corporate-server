@@ -114,11 +114,11 @@ class simpleLdap(object):
 		:type dn: str or None
 
 		:param superordinate:
-			The superordinate object of this object. Can be ommited. It is automatically searched by the given DN or position.
+			The superordinate object of this object. Can be omitted. It is automatically searched by the given DN or position.
 		:type superordinate: :class:`univention.admin.handlers.simpleLdap` or None
 
 		:param attributes:
-			The LDAP attributes of the LDAP object as dict. This should by default be ommited. To save performance when an LDAP search is done this can be used, e.g. by the lookup() method.
+			The LDAP attributes of the LDAP object as dict. This should by default be omitted. To save performance when an LDAP search is done this can be used, e.g. by the lookup() method.
 		:type attributes: None or dict
 
 		The following attributes hold information about the state of this object:
