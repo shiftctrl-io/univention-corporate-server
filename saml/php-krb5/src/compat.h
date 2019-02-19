@@ -185,7 +185,7 @@ static zend_always_inline zval* zend_compat_hash_find(HashTable *ht, char *key, 
 
 
 
-/* PHP Compatability */
+/* PHP Compatibility */
 #if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION == 1 && PHP_RELEASE_VERSION > 2) || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 1) || (PHP_MAJOR_VERSION > 5)
 
 #define INIT_STD_OBJECT(object, ce) zend_object_std_init(&(object), ce TSRMLS_CC);
