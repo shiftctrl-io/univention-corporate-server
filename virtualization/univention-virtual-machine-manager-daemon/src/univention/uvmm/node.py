@@ -495,7 +495,7 @@ class Domain(PersistentCached):
 	def migration_status(self, stats):
 		# type: (Dict[str, Any]) -> Tuple[str, Dict[str, Any]]
 		"""
-		Convert libvirt job stats to string and dictionary for string formating.
+		Convert libvirt job stats to string and dictionary for string formatting.
 		"""
 		# final_stats = {
 		#  'data_processed': 1L, 'data_remaining': 0L, 'data_total': 1L,
