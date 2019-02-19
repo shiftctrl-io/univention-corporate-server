@@ -3,7 +3,7 @@ UMC server
 ==========
 
 ----------
-Ressources
+Resources
 ----------
 
 .. automodule:: univention.management.console.module
