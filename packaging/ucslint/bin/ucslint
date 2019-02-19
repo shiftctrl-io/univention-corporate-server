@@ -153,7 +153,7 @@ class DebianPackageCheck(object):
 				print >> sys.stderr, 'WARNING: load debian/ucslint.overrides: %s' % (ex,)
 
 	def in_overrides(self, msg):
-		"""Check message agains overrides."""
+		"""Check message against overrides."""
 		filepath = abspath(msg.filename) if msg.filename else ''
 		for (modulename, pattern, number, ) in self.overrides:
 			if modulename != msg.getId():
