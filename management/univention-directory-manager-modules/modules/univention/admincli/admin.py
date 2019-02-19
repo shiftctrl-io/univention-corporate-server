@@ -1149,7 +1149,7 @@ def _doit(arglist):
 		usage()
 		return out + ["OPERATION FAILED"]
 
-	return out  # nearly the only successfull return
+	return out  # nearly the only successful return
 
 
 if __name__ == '__main__':
