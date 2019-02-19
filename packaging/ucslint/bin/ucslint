@@ -166,7 +166,7 @@ class DebianPackageCheck(object):
 		return False
 
 	def printResult(self, ignore_IDs, display_only_IDs, display_only_categories, exitcode_categories):
-		"""Print result of cheks."""
+		"""Print result of checks."""
 		incident_cnt = 0
 		exitcode_cnt = 0
 
