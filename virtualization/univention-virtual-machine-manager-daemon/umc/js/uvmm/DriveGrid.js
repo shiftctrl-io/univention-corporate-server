@@ -285,7 +285,7 @@ define([
 					size: 'Two',
 					value: disk.driver_cache || 'default',
 					label: _('Caching'),
-					description: _('Configure cache behaviour of host.'),
+					description: _('Configure cache behavior of host.'),
 					staticValues: types.dict2list(types.driverCache)
 				} ],
 				buttons: [{
