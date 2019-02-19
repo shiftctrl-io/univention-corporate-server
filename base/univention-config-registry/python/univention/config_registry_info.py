@@ -91,7 +91,7 @@ class ConfigRegistryInfo(object):
 		"""Initialize variable and category descriptions.
 
 		install_mode=True deactivates the use of an UCR instance.
-		registered_only=False creates syntetic entries for all undescribed but set variables.
+		registered_only=False creates synthetic entries for all undescribed but set variables.
 		load_customized=False deactivates loading customized descriptions.
 		"""
 		self.categories = {}
