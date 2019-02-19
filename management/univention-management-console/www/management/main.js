@@ -256,7 +256,7 @@ define([
 		},
 
 		_createModuleItem: function(_item, categoryID) {
-			// we need a uniqe ID for the store
+			// we need a unique ID for the store
 			var item = lang.mixin({
 				categories: []
 			}, _item);
