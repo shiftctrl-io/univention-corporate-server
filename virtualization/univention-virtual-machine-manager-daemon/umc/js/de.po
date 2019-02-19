@@ -1443,7 +1443,7 @@ msgstr ""
 #: umc/js/uvmm/DriveGrid.js:355
 msgid ""
 "The selected drive seems to be attached to other virtual machines and "
-"therefor should not be deleted."
+"therefore should not be deleted."
 msgstr ""
 "Das ausgewählte Laufwerk ist scheinbar mit einer anderen virtuellen Maschine "
 "verknüpft und sollte daher nicht gelöscht werden."

@@ -726,7 +726,7 @@ class Instance(Base, ProgressMixin):
 	@simple_response(with_flavor=True)
 	def containers(self, module, flavor):
 		"""Returns the list of default containers for the given object
-		type. Therefor the python module and the default object in the
+		type. Therefore the python module and the default object in the
 		LDAP directory are searched.
 
 		requests.options = {}
@@ -880,7 +880,7 @@ class Instance(Base, ProgressMixin):
 
 	def validate(self, request):
 		"""Validates the correctness of values for properties of the
-		given object type. Therefor the syntax definition of the properties is used.
+		given object type. Therefore the syntax definition of the properties is used.
 
 		requests.options = {}
 			'objectType' -- The UDM module name. If not available the flavor is used
