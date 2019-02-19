@@ -393,7 +393,7 @@ print "	'showerrors'            =>	%s," % ('TRUE' if configRegistry.is_true('sam
 
 	/*
 	 * IdP Discovery service look configuration. 
-	 * Wether to display a list of idp or to display a dropdown box. For many IdP' a dropdown box  
+	 * whether to display a list of idp or to display a dropdown box. For many IdP' a dropdown box  
 	 * gives the best use experience.
 	 * 
 	 * When using dropdown box a cookie is used to highlight the previously chosen IdP in the dropdown.  
