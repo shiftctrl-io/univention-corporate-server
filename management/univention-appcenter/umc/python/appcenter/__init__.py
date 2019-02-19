@@ -559,7 +559,7 @@ class Instance(umcm.Base, ProgressMixin):
 				MODULE.process('Warning trying to %s %s: %r' % (function, app_id, forbidden))
 				result['invokation_warning_details'] = warnings
 				if not force:
-					# dont stop "immediately".
+					# don't stop "immediately".
 					#   compute the package changes!
 					delayed_can_continue = False
 		result['serious_problems'] = serious_problems
@@ -1074,7 +1074,7 @@ class Instance(umcm.Base, ProgressMixin):
 		self.package_manager.update()
 
 	# do the same as components_put (update)
-	# but dont allow adding an already existing entry
+	# but don't allow adding an already existing entry
 	components_add = sanitize_list(DictSanitizer({'object': add_components_sanitizer}))(components_put)
 	components_add.__name__ = 'components_add'
 
