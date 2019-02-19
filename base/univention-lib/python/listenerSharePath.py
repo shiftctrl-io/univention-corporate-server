@@ -247,7 +247,7 @@ def createOrRename(old, new, cr):
 		if newPath.startswith(dir):
 			return "custom permissions for %s not allowed" % newPath
 
-	# set permissions, only modify them if a change has occured
+	# set permissions, only modify them if a change has occurred
 	try:
 		if (not old or (new.get("univentionShareDirectoryMode") and old.get("univentionShareDirectoryMode") and
 				new["univentionShareDirectoryMode"][0] != old["univentionShareDirectoryMode"][0])):

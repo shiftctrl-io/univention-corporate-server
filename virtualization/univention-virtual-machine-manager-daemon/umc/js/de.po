@@ -226,7 +226,7 @@ msgstr ""
 
 #: umc/js/uvmm/SnapshotGrid.js:181 umc/js/uvmm/TargetHostGrid.js:124
 #: umc/js/uvmm/TargetHostGrid.js:226
-msgid "An error ocurred during processing your request."
+msgid "An error occurred during processing your request."
 msgstr "Ein Fehler trat während der Bearbeitung Ihrer Anfrage auf."
 
 #: umc/js/uvmm/types.js:136

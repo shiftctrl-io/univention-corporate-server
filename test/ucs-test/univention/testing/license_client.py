@@ -117,7 +117,7 @@ class TestLicenseClient(HTMLParser):
             try:
                 self.Connection.close()
             except HTTPException as exc:
-                self.log.exception("An HTTP Exception occured while closing "
+                self.log.exception("An HTTP Exception occurred while closing "
                                    "the connection: '%s'" % exc)
 
     def get_server_password(self, secret_file='/etc/license.secret'):
@@ -137,7 +137,7 @@ class TestLicenseClient(HTMLParser):
                 self.server_password = password.read()
         except (IOError, ValueError) as exc:
             self.log.exception("Failed to get the password from the '%s', "
-                               "an error occured: %r" % (secret_file, exc))
+                               "an error occurred: %r" % (secret_file, exc))
             exit(1)
         if not self.server_password:
             self.log.critical("The password to access the license service "
@@ -189,7 +189,7 @@ class TestLicenseClient(HTMLParser):
             self.Connection.request("POST", url, body, headers)
             response = self.Connection.getresponse()
         except HTTPException as exc:
-            self.log.exception("An HTTP Exception occured while making '%s' "
+            self.log.exception("An HTTP Exception occurred while making '%s' "
                                "POST request: '%s'" % (url, exc))
             exit(1)
         return response
@@ -205,7 +205,7 @@ class TestLicenseClient(HTMLParser):
             self.Connection.request("GET", url, headers=headers)
             response = self.Connection.getresponse()
         except HTTPException as exc:
-            self.log.exception("An HTTP Exception occured while making '%s' "
+            self.log.exception("An HTTP Exception occurred while making '%s' "
                                "GET request: '%s'" % (url, exc))
             exit(1)
         return response
@@ -235,7 +235,7 @@ class TestLicenseClient(HTMLParser):
         try:
             self.feed(body)  # process the response 'body' for license link
         except HTMLParseError as exc:
-            self.log.exception("An exception occured while parsing the "
+            self.log.exception("An exception occurred while parsing the "
                                "response body for a link to a license "
                                "file: '%s'" % exc)
         if not self.link_to_license:
