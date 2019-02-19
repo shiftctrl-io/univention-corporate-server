@@ -225,7 +225,7 @@ print "	'showerrors'            =>	%s," % ('TRUE' if configRegistry.is_true('sam
 
 	/*
 	 * Sets the duration, in seconds, data should be stored in the datastore. As the datastore is used for
-	 * login and logout requests, thid option will control the maximum time these operations can take.
+	 * login and logout requests, this option will control the maximum time these operations can take.
 	 * The default is 4 hours (4*60*60) seconds, which should be more than enough for these operations.
 	 */
 	'session.datastore.timeout' => (4*60*60), // 4 hours
