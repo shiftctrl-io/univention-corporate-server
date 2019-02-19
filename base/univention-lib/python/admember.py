@@ -154,7 +154,7 @@ class timeSyncronizationFailed(Exception):
 
 class manualTimeSyncronizationRequired(timeSyncronizationFailed):
 
-	'''Time difference critical for Kerberos but syncronization aborted.'''
+	'''Time difference critical for Kerberos but synchronization aborted.'''
 
 
 class sambaJoinScriptFailed(Exception):
