@@ -672,24 +672,6 @@ define([
 					};
 				}
 
-				if ('LinkList' == iprop.type) {
-					iprop.multivalue = false;
-				} else if (iprop.type.indexOf('MultiObjectSelect') >= 0) {
-					iprop.multivalue = false;
-				} else if (iprop.multivalue && 'MultiInput' != iprop.type) {
-					// handle multivalue inputs
-					iprop.subtypes = [{
-						type: iprop.type,
-						dynamicValues: iprop.dynamicValues,
-						dynamicValuesInfo: iprop.dynamicValuesInfo,
-						dynamicOptions: iprop.dynamicOptions,
-						staticValues: iprop.staticValues,
-						size: iprop.size,
-						depends: iprop.depends
-					}];
-					iprop.type = 'MultiInput';
-				}
-
 				// handle size classes for MultiInputs that are defined at the
 				// object property and that overwrite the syntax default
 				if (iprop.size instanceof Array && iprop.subtypes instanceof Array && iprop.size.length == iprop.subtypes.length) {
