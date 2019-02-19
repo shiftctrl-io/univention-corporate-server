@@ -56,7 +56,7 @@ if __name__ == '__main__':
 				DockerImage=get_docker_appbox_image(),
 				WebInterface='/%s' % app.app_name,
 				WebInterfacePortHTTP='0',  # NO HTTP!
-				WebInterfacePortHTTPS='80',  # ONLY HTTPS PUBLICALLY!
+				WebInterfacePortHTTPS='80',  # ONLY HTTPS PUBLICLY!
 				WebInterfaceProxyScheme='http',  # CONTAINER ONLY HAS HTTP (80) SUPPORT!
 				AutoModProxy='True',
 				DockerScriptSetup='/usr/sbin/%s-setup' % app_name,
