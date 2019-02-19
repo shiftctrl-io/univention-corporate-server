@@ -1645,7 +1645,7 @@ def ucs2con(s4connector, key, object):
 
 	if not dns_type:
 		# unknown object -> ignore
-		ud.debug(ud.LDAP, ud.INFO, 'dns ucs2con: Ignore unkown dns object: %s' % object['dn'])
+		ud.debug(ud.LDAP, ud.INFO, 'dns ucs2con: Ignore unknown dns object: %s' % object['dn'])
 		return True
 
 	ud.debug(ud.LDAP, ud.INFO, 'dns ucs2con: Object (%s) is of type %s' % (object['dn'], dns_type))
@@ -1722,7 +1722,7 @@ def con2ucs(s4connector, key, object):
 
 	if not dns_type:
 		# unknown object -> ignore
-		ud.debug(ud.LDAP, ud.INFO, 'dns con2ucs: Ignore unkown dns object: %s' % object['dn'])
+		ud.debug(ud.LDAP, ud.INFO, 'dns con2ucs: Ignore unknown dns object: %s' % object['dn'])
 		return True
 
 	ud.debug(ud.LDAP, ud.INFO, 'dns con2ucs: Object (%s) is of type %s' % (object['dn'], dns_type))
