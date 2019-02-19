@@ -482,7 +482,7 @@ class ConfigHandlerScript(ConfigHandler):
 		return NotImplemented
 
 	def __call__(self, args):
-		"""Call external programm after change."""
+		"""Call external program after change."""
 		_ucr, changed = args
 		print 'Script: %s' % self.script
 		if os.path.isfile(self.script):
