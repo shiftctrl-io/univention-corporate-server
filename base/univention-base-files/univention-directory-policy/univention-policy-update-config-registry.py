@@ -37,7 +37,7 @@ from optparse import OptionParser
 
 
 def get_policy(host_dn, verbose=False):
-	"""Retriev policy for host_dn."""
+	"""Retrieve policy for host_dn."""
 	set_list = {}
 
 	# get policy result
