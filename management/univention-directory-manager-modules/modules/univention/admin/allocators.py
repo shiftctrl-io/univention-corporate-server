@@ -132,10 +132,10 @@ def acquireRange(lo, position, atype, attr, ranges, scope='base'):
 					univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, 'ALLOCATE: Lock ID %r for %r' % (startID, other))
 					univention.admin.locking.lock(lo, position, other, str(startID), scope=scope)
 			except univention.admin.uexceptions.noLock:
-				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, 'ALLOCATE: Cant Lock ID %r' % startID)
+				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, "ALLOCATE: Can't Lock ID %r" % startID)
 				continue
 			except univention.admin.uexceptions.objectExists:
-				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, 'ALLOCATE: Cant Lock existing ID %r' % startID)
+				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, "ALLOCATE: Can't Lock existing ID %r" % startID)
 				continue
 
 			if atype in ('uidNumber', 'gidNumber'):
