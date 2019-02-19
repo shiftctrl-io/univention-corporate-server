@@ -791,7 +791,7 @@ class Node(PersistentCached):
 						logger.debug("Loaded from cache '%s#%s'", self.pd.uri, domStat.pd.uuid)
 					except (EOFError, EnvironmentError, AssertionError, ET.XMLSyntaxError, TypeError) as ex:
 						logger.warning("Failed to load cached domain %s: %s", cache_file_name, ex)
-				del dirs[:]  # just that direcory; no recursion
+				del dirs[:]  # just that directory; no recursion
 		except (EOFError, EnvironmentError, AssertionError, pickle.PickleError) as ex:
 			logger.warning("Failed to load cached state of %s: %s", uri, ex)
 			self.pd = Data_Node()  # public data
