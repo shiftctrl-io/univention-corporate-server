@@ -2923,7 +2923,7 @@ class simpleComputer(simpleLdap):
 			return
 
 		# Since self.dn is not updated yet, self.dn contains still the old DN.
-		# Thats why olddn and newdn get reassebled from scratch.
+		# That's why olddn and newdn get reassebled from scratch.
 		olddn = 'cn=%s,%s' % (escape_dn_chars(oldname), self.lo.parentDn(self.dn))
 		newdn = 'cn=%s,%s' % (escape_dn_chars(newname), self.lo.parentDn(self.dn))
 
