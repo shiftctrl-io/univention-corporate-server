@@ -790,7 +790,7 @@ keyInputBlur: function() {
     $D('showKeyboard').className = "noVNC_status_button";
     //Weird bug in iOS if you change keyboardVisible
     //here it does not actually occur so next time
-    //you click keyboard icon it doesnt work.
+    //you click keyboard icon it does not work.
     UI.hideKeyboardTimeout = setTimeout(function() { UI.setKeyboard(); },100);
 },
 
