@@ -369,7 +369,7 @@ init = function() {
         vmessage("Typed Arrays not supported: " + exc);
     }
     if (! do_arrayBuffer) {
-        message("Typed Arrays (ArrayBuffers) not suppoted");
+        message("Typed Arrays (ArrayBuffers) not supported");
     }
     vmessage("<< init");
 }
