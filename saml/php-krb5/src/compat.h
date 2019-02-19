@@ -111,7 +111,7 @@ static inline zend_string *zval_get_string(zval *zv TSRMLS_DC) {
 #include "zend_operators.h"
 
 typedef size_t strsize_t;
-/* removed/uneeded macros */
+/* removed/unneeded macros */
 #define TSRMLS_CC
 /* compatibility macros */
 #define _RETURN_STRING(a)      RETURN_STRING(a)
