@@ -294,7 +294,7 @@ class UniventionPackageCheck(uub.UniventionPackageCheckDebian):
 		super(UniventionPackageCheck, self).check(path)
 
 		errors = []
-		for ignore, pathes in self._iter_pathes(path):
+		for ignore, paths in self._iter_pathes(path):
 			cmd = ['flake8', '--config=/dev/null']
 			if ignore:
 				cmd.extend(['--ignore', ignore])
@@ -307,7 +307,7 @@ class UniventionPackageCheck(uub.UniventionPackageCheckDebian):
 			if self.debuglevel > 0:
 				cmd.append('--show-source')
 			cmd.append('--')
-			cmd.extend(pathes)
+			cmd.extend(paths)
 
 			process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 			errors.extend(process.communicate()[0].splitlines())
@@ -315,7 +315,7 @@ class UniventionPackageCheck(uub.UniventionPackageCheckDebian):
 		self.format_errors(errors)
 
 	def fix(self, path, *args):
-		for ignore, pathes in self._iter_pathes(path):
+		for ignore, paths in self._iter_pathes(path):
 			cmd = ['autopep8', '-i', '-aaa']
 			if ignore:
 				cmd.extend(['--ignore', ignore])
@@ -324,7 +324,7 @@ class UniventionPackageCheck(uub.UniventionPackageCheckDebian):
 			cmd.extend(['--max-line-length', str(self.MAX_LINE_LENGTH)])
 			cmd.extend(args)
 			cmd.append('--')
-			cmd.extend(pathes)
+			cmd.extend(paths)
 			subprocess.call(cmd)
 
 	def _iter_pathes(self, path):
@@ -362,8 +362,8 @@ class UniventionPackageCheck(uub.UniventionPackageCheckDebian):
 		return False
 
 	def find_python_files(self, base):
-		pathes = set(list(uub.FilteredDirWalkGenerator(base, suffixes=['.py'])) + list(uub.FilteredDirWalkGenerator(base, ignore_suffixes=['.py'], reHashBang=self.PYTHON_HASH_BANG)))
-		for path in pathes:
+		paths = set(list(uub.FilteredDirWalkGenerator(base, suffixes=['.py'])) + list(uub.FilteredDirWalkGenerator(base, ignore_suffixes=['.py'], reHashBang=self.PYTHON_HASH_BANG)))
+		for path in paths:
 			if not self.ignore_path(path):
 				yield path
 
