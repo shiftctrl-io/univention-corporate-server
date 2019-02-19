@@ -248,7 +248,7 @@
     WebSocket.__initialized = true;
     
     if (WebSocket.__swfLocation) {
-      // For backword compatibility.
+      // For backward compatibility.
       window.WEB_SOCKET_SWF_LOCATION = WebSocket.__swfLocation;
     }
     if (!window.WEB_SOCKET_SWF_LOCATION) {
