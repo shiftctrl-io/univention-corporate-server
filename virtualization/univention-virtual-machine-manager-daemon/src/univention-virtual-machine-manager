@@ -219,7 +219,7 @@ class ParserGenerator(object):
 
 	def frequency(self, sub_parser):
 		"""
-		Set the interval how often UVMM queries all registerd or that specific
+		Set the interval how often UVMM queries all registered or that specific
 		virtualization server.
 		"""
 		sub_parser.add_argument(
