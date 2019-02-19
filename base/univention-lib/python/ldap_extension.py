@@ -843,7 +843,7 @@ class UniventionUDMExtension(UniventionLDAPExtension):
 		while not os.path.exists(self.filename):
 			if time.time() - t0 > timeout:
 				print "ERROR"
-				print >>sys.stderr, "ERROR: Timout waiting for %s." % (self.filename,)
+				print >>sys.stderr, "ERROR: Timeout waiting for %s." % (self.filename,)
 				return False
 			sys.stdout.write(".")
 			sys.stdout.flush()
