@@ -43,7 +43,7 @@ class Output:
 		self.text = []
 
 	def write(self, line):
-		"""Append singe line."""
+		"""Append single line."""
 		if line and line.strip():
 			self.text.append(line)
 

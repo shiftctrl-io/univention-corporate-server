@@ -265,7 +265,7 @@ define([
 			}, function(id, placeholder) {
 				var node = dom.byId(id);
 				if (!node) {
-					return;  // the SAML signle sign on page is shown
+					return;  // the SAML single sign on page is shown
 				}
 				attr.set(node, 'placeholder', placeholder);
 				if (!('placeholder' in node)) {
