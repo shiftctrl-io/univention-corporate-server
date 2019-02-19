@@ -109,7 +109,7 @@ function constructor() {
         throw("Canvas does not support createImageData");
     }
     if (conf.prefer_js === null) {
-        Util.Info("Prefering javascript operations");
+        Util.Info("Preferring javascript operations");
         conf.prefer_js = true;
     }
 
