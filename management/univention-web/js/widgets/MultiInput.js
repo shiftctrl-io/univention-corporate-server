@@ -773,7 +773,7 @@ define([
 		},
 
 		// ready:
-		//		Similiar to `umc/widgets/_FormWidgetMixin:ready`.
+		//		Similar to `umc/widgets/_FormWidgetMixin:ready`.
 		ready: function() {
 			return this._readyDeferred;
 		}
