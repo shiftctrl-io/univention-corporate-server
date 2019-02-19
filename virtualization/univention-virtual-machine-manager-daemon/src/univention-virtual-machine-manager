@@ -170,7 +170,7 @@ class ParserGenerator(object):
 
 	@staticmethod
 	def _usage(doc):
-		"""Show usage informations for mode."""
+		"""Show usage information for mode."""
 		lines = doc.split('\n')
 		while lines and not lines[0].strip():
 			del lines[0]
