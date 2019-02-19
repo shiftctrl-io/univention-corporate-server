@@ -95,7 +95,7 @@ def get(module, co, lo, position, dn='', attr=None, superordinate=None, attribut
 
 
 def open(object):
-	'''initialization of properties not neccessary for browsing etc.'''
+	'''initialization of properties not necessary for browsing etc.'''
 
 	if not object:
 		return
@@ -262,7 +262,7 @@ def wantsCleanup(object):
 
 
 def performCleanup(object):
-	'''some objects create other objects. remove those if neccessary.'''
+	'''some objects create other objects. remove those if necessary.'''
 
 	try:
 		object.cleanup()
