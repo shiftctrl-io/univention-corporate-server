@@ -675,7 +675,7 @@ msgstr ""
 #~ "Die Konfigration ist noch nicht vorhanden oder zumindest unvollständig."
 
 #~ msgid ""
-#~ "The following settings control the internal behaviour of the UCS Active "
+#~ "The following settings control the internal behavior of the UCS Active "
 #~ "Directory connector. For all attributes reasonable default values are "
 #~ "provided."
 #~ msgstr ""

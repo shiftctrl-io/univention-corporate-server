@@ -2396,7 +2396,7 @@ def operatingSystem_attribute(ucr, samdb):
 
 
 def takeover_DC_Behavior_Version(ucr, remote_samdb, samdb, ad_server_name, sitename):
-	# DC Behaviour Version
+	# DC Behavior Version
 	msg = remote_samdb.search(
 		base="CN=NTDS Settings,CN=%s,CN=Servers,CN=%s,CN=Sites,CN=Configuration,%s" % (ad_server_name, sitename, samdb.domain_dn()),
 		scope=samba.ldb.SCOPE_BASE,
