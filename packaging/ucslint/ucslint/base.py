@@ -335,7 +335,7 @@ class FilteredDirWalkGenerator(object):
 		"""
 		FilteredDirWalkGenerator is a generator that walks down all directories and returns all matching filenames.
 
-		There are several posibilities to limit returned results:
+		There are several possibilities to limit returned results:
 		- ignore_dirs: a list of directory names that will be excluded when traversing subdirectories (e.g. [ '.git', '.svn' ] )
 		- prefixes: a list of prefixes files have to start with (e.g. ['univention-', 'preinst'])
 		- suffixes: a list of suffixes files have to end with (e.g. [ '.py', '.sh', '.patch' ])
