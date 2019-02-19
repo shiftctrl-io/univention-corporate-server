@@ -65,7 +65,7 @@ define([
 			// based on the code from dijit.form.CheckBox
 			newValue = tools.isTrue( newValue );
 
-			// this is important, otherwise the inital state is displayed wrong
+			// this is important, otherwise the initial state is displayed wrong
 			if(this._created){
 				this.set('checked', newValue, priorityChange);
 			}
