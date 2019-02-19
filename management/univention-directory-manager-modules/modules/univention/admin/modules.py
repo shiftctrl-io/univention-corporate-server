@@ -315,7 +315,7 @@ def update_extended_attributes(lo, module, position):
 		try:
 			mayChange = int(attrs.get('univentionUDMPropertyValueMayChange', ['0'])[0])
 		except:
-			ud.debug(ud.ADMIN, ud.ERROR, 'modules update_extended_attributes: ERROR: processing univentionUDMPropertyValueMayChange throwed exception - assuming mayChange=0')
+			ud.debug(ud.ADMIN, ud.ERROR, 'modules update_extended_attributes: ERROR: processing univentionUDMPropertyValueMayChange threw exception - assuming mayChange=0')
 			mayChange = 0
 
 		# value is editable (only via hooks or direkt module.info[] access)
@@ -330,7 +330,7 @@ def update_extended_attributes(lo, module, position):
 		try:
 			doNotSearch = int(attrs.get('univentionUDMPropertyDoNotSearch', ['0'])[0])
 		except:
-			ud.debug(ud.ADMIN, ud.ERROR, 'modules update_extended_attributes: ERROR: processing univentionUDMPropertyDoNotSearch throwed exception - assuming doNotSearch=0')
+			ud.debug(ud.ADMIN, ud.ERROR, 'modules update_extended_attributes: ERROR: processing univentionUDMPropertyDoNotSearch threw exception - assuming doNotSearch=0')
 			doNotSearch = 0
 
 		# check if CA is multivalue property
