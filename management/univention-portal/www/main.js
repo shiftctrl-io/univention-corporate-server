@@ -910,7 +910,7 @@ define([
 
 			// require MultiInput for multivalue properties that will
 			// get rewritten by this._prepareProps()
-			properties = lang.clone(properties); // clone beacuse properties is a reference to an array
+			properties = lang.clone(properties); // clone because properties is a reference to an array
 			properties.push({ 'type': 'MultiInput' });
 
 			// require the necessary widgets to display the given properties
