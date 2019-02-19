@@ -485,7 +485,7 @@ PHP_METHOD(KRB5NegotiateAuth, getDelegatedCredentials)
 
 	if(GSS_ERROR(status)) {
 		php_krb5_gssapi_handle_error(status, minor_status TSRMLS_CC);
-		zend_throw_exception(NULL, "Failure while imporing delegated ticket", 0 TSRMLS_CC);
+		zend_throw_exception(NULL, "Failure while importing delegated ticket", 0 TSRMLS_CC);
 		return;
 	}
 
