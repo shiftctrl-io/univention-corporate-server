@@ -2376,7 +2376,7 @@ class object(univention.admin.handlers.simpleLdap, mungeddial.Support):
 			# 3. set samba attributes
 			if 'samba' in self.options:
 				sambaPwdLastSetValue = str(long(time.time()))
-				# transfered into ml below
+				# transferred into ml below
 				univention.debug.debug(univention.debug.ADMIN, univention.debug.INFO, 'sambaPwdLastSetValue: %s' % sambaPwdLastSetValue)
 
 			# 4. set kerberos attribute
