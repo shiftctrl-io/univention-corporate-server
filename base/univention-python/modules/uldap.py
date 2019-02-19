@@ -573,7 +573,7 @@ class access:
 	def get_schema(self):
 		# type: () -> ldap.schema.subentry.SubSchema
 		"""
-		Retriev LDAP schema information from LDAP server.
+		Retrieve LDAP schema information from LDAP server.
 
 		:returns: The LDAP schema.
 		:rtype: ldap.schema.subentry.SubSchema
