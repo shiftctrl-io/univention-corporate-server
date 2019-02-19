@@ -1452,7 +1452,7 @@ class object(univention.admin.handlers.simpleLdap, mungeddial.Support):
 
 		if 'posix' in self.options:
 
-			# The shadowLastChange attribute is the amount of days between 1/1/1970 upto the day that password was modified,
+			# The shadowLastChange attribute is the amount of days between 1/1/1970 up to the day that password was modified,
 			# shadowMax is the number of days a password is valid. So the password expires on 1/1/1970+shadowLastChange+shadowMax.
 			# shadowExpire contains the absolute date to expire the account.
 
