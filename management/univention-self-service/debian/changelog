@@ -1,3 +1,10 @@
+univention-self-service (4.0.2-1) unstable; urgency=medium
+
+  * Bug #48446: don't cause blocking self service invitation if one user is
+  	broken
+
+ -- Florian Best <best@univention.de>  Wed, 20 Feb 2019 14:01:05 +0100
+
 univention-self-service (4.0.1-5) unstable; urgency=medium
 
   * Bug #48447: use +0 instead of none in ACL definition
