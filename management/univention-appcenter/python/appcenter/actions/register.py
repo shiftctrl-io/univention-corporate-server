@@ -39,6 +39,7 @@ import re
 from optparse import Values
 
 from ldap.dn import str2dn, dn2str
+from distutils.version import LooseVersion
 
 from univention.lib.ldap_extension import UniventionLDAPSchema
 
@@ -47,7 +48,7 @@ from univention.appcenter.packages import reload_package_manager
 from univention.appcenter.udm import create_object_if_not_exists, get_app_ldap_object, remove_object_if_exists, create_recursive_container
 from univention.appcenter.database import DatabaseConnector, DatabaseError
 from univention.appcenter.extended_attributes import get_schema, get_extended_attributes, create_extended_attribute, remove_extended_attribute
-from univention.appcenter.actions import StoreAppAction
+from univention.appcenter.actions import StoreAppAction, get_action
 from univention.appcenter.exceptions import DatabaseConnectorError, RegisterSchemaFailed, RegisterSchemaFileFailed
 from univention.appcenter.actions.credentials import CredentialsAction
 from univention.appcenter.utils import mkdir, app_ports, app_ports_with_protocol, currently_free_port_in_range, generate_password, container_mode
@@ -192,8 +193,17 @@ class Register(CredentialsAction):
 		if not self._shall_register(args, 'attributes'):
 			return
 		for app in apps:
+			lo, pos = self._get_ldap_connection(args)
+			ldap_object = get_app_ldap_object(app, lo, pos)
 			if self._do_register(app, args):
-				self._register_attributes(app, args)
+				domain = get_action('domain')
+				i = domain.to_dict([app])[0]['installations']
+				if all(LooseVersion(app.ucs_version) >= LooseVersion(x['ucs_version']) for x in i.values() if x['ucs_version']):
+					self._register_attributes(app, args)
+				else:
+					self.debug('Not registering attributes. App is not the latest version in domain.')
+			elif ldap_object.get_siblings():
+				self.debug('Not removing attributes, App is still installed somewhere')
 			else:
 				self._unregister_attributes(app, args)
 
@@ -240,10 +250,6 @@ class Register(CredentialsAction):
 		attributes, __ = get_extended_attributes(app)
 		if attributes:
 			lo, pos = self._get_ldap_connection(args)
-			ldap_object = get_app_ldap_object(app, lo, pos)
-			if ldap_object.get_siblings():
-				self.debug('Not removing attributes, App is still installed somewhere')
-				return
 			for attribute in attributes:
 				remove_extended_attribute(attribute, lo, pos)
 
