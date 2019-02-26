@@ -85,6 +85,7 @@ def import_syntax_files():
 					univention.debug.debug(univention.debug.ADMIN, univention.debug.ERROR, 'admin.syntax.import_syntax_files: TRACEBACK:\n%s' % traceback.format_exc())
 				finally:
 					_ = gettext
+	__after_syntax_import()
 
 
 choice_update_functions = []
@@ -377,8 +378,10 @@ class TwoString(string):
 class TextArea(string):
 	pass
 
+
 class Editor(string):
 	pass
+
 
 class TwoEditor(Editor):
 	size = 'Two'
@@ -3656,6 +3659,7 @@ class LocalizedDisplayName(translationTuple):
 class LocalizedDescription(translationTuple):
 	subsyntaxes = [(_('Language code (e.g. en_US)'), languageCode), (_('Description'), string)]
 
+
 class LocalizedAnonymousEmpty(translationTuple):
 	subsyntaxes = [(_('Language code (e.g. en_US)'), languageCode), (_('Message that is shown to anonymous visitors when the portal is empty'), TwoEditor)]
 
@@ -3880,6 +3884,18 @@ class mailinglist_name(gid):
 
 __register_choice_update_function(Country.update_choices)
 Country.update_choices()
+
+
+def __after_syntax_import():
+	# set some default syntax classes, so that we can somewhen remove these from syntax.d and implement here
+	global appActivatedBoolean, appActivatedTrue
+	if not hasattr(univention.admin.syntax, 'appActivatedBoolean'):
+		class appActivatedBoolean(boolean):
+			pass
+
+	if not hasattr(univention.admin.syntax, 'appActivatedTrue'):
+		class appActivatedTrue(TrueFalseUp):
+			pass
 
 
 if __name__ == '__main__':
