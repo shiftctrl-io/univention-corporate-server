@@ -262,14 +262,13 @@ msgid "Forwarding delay"
 msgstr "Délai de transmission"
 
 #: umc/js/setup/InterfaceWizard.js:95
-#, javascript-format
 msgid ""
-"Further information can be found in the <a href=\"http://docs.univention.de/"
-"manual-%s.html#computers:networkcomplex\" target=\"_blank\">UCS "
+"Further information can be found in the <a href=\"https://docs.software-univention.de/"
+"manual.html#computers:networkcomplex\" target=\"_blank\">UCS "
 "documentation</a>."
 msgstr ""
-"Vous pouvez trouver davantage d'informations dans la <a href=\"http://docs."
-"univention.de/ manual-%s.html#computers:networkcomplex\" target=\"_blank\"> "
+"Vous pouvez trouver davantage d'informations dans la <a href=\"https://docs."
+"software-univention.de/manual.html#computers:networkcomplex\" target=\"_blank\"> "
 "documentation UCS</a>."
 
 #: umc/js/setup/InterfaceWizard.js:627
@@ -583,9 +582,8 @@ msgid "don't set"
 msgstr "ne pas définir"
 
 #: umc/js/setup.js:188
-#, javascript-format
-msgid "http://docs.univention.de/manual-%s.html#computers:networkcomplex:uvmm"
-msgstr "http://docs.univention.de/manual-%s.html#computers:networkcomplex:uvmm"
+msgid "https://docs.software-univention.de/manual.html#computers:networkcomplex:uvmm"
+msgstr "https://docs.software-univention.de/manual.html#computers:networkcomplex:uvmm"
 
 #: umc/js/setup/InterfaceWizard.js:630
 msgid "set"

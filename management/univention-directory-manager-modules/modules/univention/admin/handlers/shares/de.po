@@ -784,8 +784,8 @@ msgstr "deaktivieren"
 msgid "documents"
 msgstr "Dokumente"
 
-msgid "http://docs.univention.de/manual.html#print::shares"
-msgstr "http://docs.univention.de/handbuch.html#print::shares"
+msgid "https://docs.software-univention.de/manual.html#print::shares"
+msgstr "https://docs.software-univention.de/handbuch.html#print::shares"
 
 msgid "manual"
 msgstr "manuell"

@@ -276,14 +276,13 @@ def verbose_http_error(exc):
 	while hasattr(exc, 'reason'):
 		exc = exc.reason
 	if hasattr(exc, 'errno'):
-		version = ucr_get('version/version')
 		errno = exc.errno
 		strerror += getattr(exc, 'strerror', '') or ''
 		if errno == 1:  # gaierror(1, something like 'SSL Unknown protocol')  SSLError(1, '_ssl.c:504: error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed')
-			link_to_doc = _('https://docs.software-univention.de/manual-%s.html#ip-config:Web_proxy_for_caching_and_policy_management__virus_scan') % version
+			link_to_doc = _('https://docs.software-univention.de/manual.html#ip-config:Web_proxy_for_caching_and_policy_management__virus_scan')
 			strerror += '. ' + _('This may be a problem with the firewall or proxy of your system. You may find help at %s.') % link_to_doc
 		if errno == -2:  # gaierror(-2, 'Name or service not known')
-			link_to_doc = _('https://docs.software-univention.de/manual-%s.html#networks:dns') % version
+			link_to_doc = _('https://docs.software-univention.de/manual.html#networks:dns')
 			strerror += '. ' + _('This is probably due to the DNS settings of your server. You may find help at %s.') % link_to_doc
 	if not strerror.strip():
 		strerror = str(exc)

@@ -192,18 +192,16 @@ msgid "Upgrading %s"
 msgstr "Aktualisiere %s"
 
 #: umc/python/appcenter/util.py:183
-#, python-format
 msgid ""
-"https://docs.software-univention.de/manual-%s.html#ip-config:"
+"https://docs.software-univention.de/manual.html#ip-config:"
 "Web_proxy_for_caching_and_policy_management__virus_scan"
 msgstr ""
-"https://docs.software-univention.de/handbuch-%s.html#ip-config:Web-"
+"https://docs.software-univention.de/handbuch.html#ip-config:Web-"
 "Proxy_fuer_Caching_und_Policy_Management_Virenscan"
 
 #: umc/python/appcenter/util.py:186
-#, python-format
-msgid "https://docs.software-univention.de/manual-%s.html#networks:dns"
-msgstr "https://docs.software-univention.de/handbuch-%s.html#networks:dns"
+msgid "https://docs.software-univention.de/manual.html#networks:dns"
+msgstr "https://docs.software-univention.de/handbuch.html#networks:dns"
 
 #: umc/python/appcenter/__init__.py:974
 msgid "installed"
