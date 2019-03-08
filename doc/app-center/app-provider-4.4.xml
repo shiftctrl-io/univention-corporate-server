@@ -1795,7 +1795,8 @@ docker exec "$CONTAINER" ...
     "udm_object_type": "users/user"
 }
 </programlisting>
-				</para>
+                </para>
+            </section>
         </section>
     </section>
 
@@ -1949,7 +1950,6 @@ docker exec "$CONTAINER" ...
                 Developer Reference</ulink>.
         </para>
     </section>
-  </section>
 
 </chapter>
 
