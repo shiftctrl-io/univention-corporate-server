@@ -87,13 +87,20 @@ def getRootDnConnection(start_tls=2, decode_ignorelist=[], reconnect=True):  # t
 	ucr.load()
 	port = int(ucr.get('slapd/port', '7389').split(',')[0])
 	host = ucr['hostname'] + '.' + ucr['domainname']
+	uri = None
+	sasl_mech = None
 	if ucr.get('ldap/server/type', 'dummy') == 'master':
 		bindpw = open('/etc/ldap.secret').read().rstrip('\n')
 		binddn = 'cn=admin,{0}'.format(ucr['ldap/base'])
 	else:
-		bindpw = open('/etc/ldap/rootpw.conf').read().rstrip('\n').lstrip('rootpw "').rstrip('"')
-		binddn = 'cn=update,{0}'.format(ucr['ldap/base'])
-	return access(host=host, port=port, base=ucr['ldap/base'], binddn=binddn, bindpw=bindpw, start_tls=start_tls, decode_ignorelist=decode_ignorelist, reconnect=reconnect)
+		bindpw = None
+		binddn = None
+		port = None
+		host = None
+		uri = 'ldapi:///'
+		sasl_mech = 'EXTERNAL'
+		start_tls = 0  # tls doesn't work on a socket
+	return access(host=host, port=port, uri=uri, base=ucr['ldap/base'], binddn=binddn, bindpw=bindpw, start_tls=start_tls, decode_ignorelist=decode_ignorelist, reconnect=reconnect, sasl_mech=sasl_mech, follow_referral=False)
 
 
 def getAdminConnection(start_tls=2, decode_ignorelist=[], reconnect=True):  # type: (int, List[str], bool) -> access
@@ -194,9 +201,10 @@ class access:
 	:param uri str: LDAP connection string.
 	:param follow_referral bool: Follow referrals and return result from other servers instead of returning the referral itself.
 	:param reconnect bool: Automatically re-establish connection to LDAP server if connection breaks.
+	:param str sasl_mech: SASL method (e.g. EXTERNAL) only in combination with ldapi
 	"""
 
-	def __init__(self, host='localhost', port=None, base='', binddn='', bindpw='', start_tls=2, ca_certfile=None, decode_ignorelist=[], use_ldaps=False, uri=None, follow_referral=False, reconnect=True):
+	def __init__(self, host='localhost', port=None, base='', binddn='', bindpw='', start_tls=2, ca_certfile=None, decode_ignorelist=[], use_ldaps=False, uri=None, follow_referral=False, reconnect=True, sasl_mech=None):
 		# type: (str, int, str, Optional[str], str, int, str, List, bool, str, bool, bool) -> None
 		self.host = host
 		self.base = base
@@ -205,6 +213,7 @@ class access:
 		self.start_tls = start_tls
 		self.ca_certfile = ca_certfile
 		self.reconnect = reconnect
+		self.sasl_mech = sasl_mech
 
 		self.port = int(port) if port else None
 
@@ -300,7 +309,7 @@ class access:
 			if self.start_tls == 1:
 				try:
 					self.lo.start_tls_s()
-				except:
+				except ldap.PROTOCOL_ERROR:
 					univention.debug.debug(univention.debug.LDAP, univention.debug.WARN, 'Could not start TLS')
 			elif self.start_tls == 2:
 				self.lo.start_tls_s()
@@ -308,6 +317,8 @@ class access:
 		if self.binddn and not self.uri.startswith('ldapi://'):
 			univention.debug.debug(univention.debug.LDAP, univention.debug.INFO, 'bind binddn=%s' % self.binddn)
 			self.lo.simple_bind_s(self.binddn, self.__encode_pwd(self.bindpw))
+		elif self.sasl_mech:
+			self.sasl_non_interactive_bind_s(self.sasl_mech)
 
 		# Override referral handling
 		if self.follow_referral:
@@ -898,7 +909,7 @@ class access:
 			if self.start_tls == 1:
 				try:
 					lo_ref.start_tls_s()
-				except:
+				except ldap.PROTOCOL_ERROR:
 					univention.debug.debug(univention.debug.LDAP, univention.debug.WARN, 'Could not start TLS')
 			elif self.start_tls == 2:
 				lo_ref.start_tls_s()
