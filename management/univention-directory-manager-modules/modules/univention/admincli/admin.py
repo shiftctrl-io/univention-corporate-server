@@ -707,17 +707,6 @@ def _doit(arglist):
 		elif opt == '--recursive':
 			recursive = 1
 
-	if action in ['modify', 'edit', 'create', 'new']:
-		if policy_reference:
-			for el in policy_reference:
-				oc = lo.get(el, ['objectClass'])
-				if not oc:
-					out.append("Object to be referenced does not exist:" + el)
-					return out + ["OPERATION FAILED"]
-				if 'univentionPolicy' not in oc['objectClass']:
-					out.append("Object to be referenced is no valid Policy:" + el)
-					return out + ["OPERATION FAILED"]
-
 	#+++# ACTION CREATE #+++#
 	if action == 'create' or action == 'new':
 			if hasattr(module, 'operations') and module.operations:
@@ -751,6 +740,8 @@ def _doit(arglist):
 			except univention.admin.uexceptions.valueInvalidSyntax as err:
 				out.append('E: Invalid Syntax: %s' % err)
 				return out + ["OPERATION FAILED"]
+
+			object.policy_reference(*policy_reference)
 
 			exists = 0
 			exists_msg = None
@@ -818,13 +809,6 @@ def _doit(arglist):
 				out.append('E: circular group dependency detected: %s' % e)
 				return out + ["OPERATION FAILED"]
 
-			if not exists and policy_reference:
-				lo.modify(dn, [('objectClass', '', 'univentionPolicyReference')])
-				modlist = []
-				for el in policy_reference:
-					modlist.append(('univentionPolicyReference', '', el))
-				lo.modify(dn, modlist)
-
 			if exists == 1:
 				if exists_msg:
 					out.append('Object exists: %s' % exists_msg)
@@ -890,7 +874,7 @@ def _doit(arglist):
 
 		else:  # modify
 
-			if (len(input) + len(append) + len(remove) + len(parsed_append_options) + len(parsed_remove_options) + len(parsed_options)) > 0:
+			if (len(input) + len(append) + len(remove) + len(parsed_append_options) + len(parsed_remove_options) + len(parsed_options) + len(policy_reference) + len(policy_dereference)) > 0:
 				if parsed_options:
 					object.options = parsed_options
 				for option in parsed_append_options:
@@ -901,12 +885,17 @@ def _doit(arglist):
 					except ValueError:
 						parsed_remove_options.remove(option)
 						out.append('Warning: option %r is not set. Ignoring.' % (option,))
+
 				try:
 					out.extend(object_input(module, object, input, append, remove))
 				except univention.admin.uexceptions.valueMayNotChange, e:
 					out.append(unicode(e[0]))
 					return out + ["OPERATION FAILED"]
-				if object.hasChanged(input.keys()) or object.hasChanged(append.keys()) or object.hasChanged(remove.keys()) or parsed_append_options or parsed_remove_options or parsed_options:
+
+				object.policy_reference(*policy_reference)
+				object.policy_dereference(*policy_dereference)
+
+				if object.hasChanged(input.keys()) or object.hasChanged(append.keys()) or object.hasChanged(remove.keys()) or parsed_append_options or parsed_remove_options or parsed_options or object.policiesChanged():
 					try:
 						dn = object.modify()
 						object_modified += 1
@@ -922,29 +911,6 @@ def _doit(arglist):
 					except univention.admin.uexceptions.valueInvalidSyntax, e:
 						out.append('E: Invalid Syntax: %s' % e)
 						return out + ["OPERATION FAILED"]
-
-			if policy_reference:
-				if 'univentionPolicyReference' not in lo.get(dn, ['objectClass'])['objectClass']:
-					lo.modify(dn, [('objectClass', '', 'univentionPolicyReference')])
-					object_modified += 1
-				modlist = []
-				upr = lo.search(base=dn, scope='base', attr=['univentionPolicyReference'])[0][1]
-				upr.setdefault('univentionPolicyReference', [])
-				for el in policy_reference:
-					if val in upr['univentionPolicyReference']:
-						out.append('WARNING: cannot append %s to univentionPolicyReference, value exists' % val)
-					else:
-						modlist.append(('univentionPolicyReference', '', el))
-				if modlist:
-					lo.modify(dn, modlist)
-					object_modified += 1
-
-			if policy_dereference:
-				modlist = []
-				for el in policy_dereference:
-					modlist.append(('univentionPolicyReference', el, ''))
-				lo.modify(dn, modlist)
-				object_modified += 1
 
 		if object_modified > 0:
 			out.append('Object modified: %s' % _2utf8(dn))
