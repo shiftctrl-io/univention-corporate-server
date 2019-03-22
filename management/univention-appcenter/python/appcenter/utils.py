@@ -204,7 +204,7 @@ def call_process2(cmd, logger=None, env=None, cwd=None):
 		logger = utils_logger
 	if cwd:
 		logger.debug('Running in %s:' % cwd)
-	logger.info('Running command: {0}'.format(' '.join(cmd)))
+	logger.info('Running command: {0}'.format(' '.join(pipes.quote(str(arg)) for arg in cmd)))
 	out = str()
 	ret = 0
 	try:
@@ -220,7 +220,7 @@ def call_process2(cmd, logger=None, env=None, cwd=None):
 		out = str(err)
 		ret = 1
 	if ret:
-		logger.error('Command {} failed with: {} ({})'.format(' '.join(cmd), out.strip(), ret))
+		logger.error('Command {} failed with: {} ({})'.format(' '.join(pipes.quote(str(arg)) for arg in cmd), out.strip(), ret))
 	return ret, out
 
 
