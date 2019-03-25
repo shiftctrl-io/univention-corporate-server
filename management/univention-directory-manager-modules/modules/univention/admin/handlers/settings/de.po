@@ -360,7 +360,7 @@ msgid "Extended option"
 msgstr "Erweiterte Option"
 
 msgid "Extended options"
-msgstr "Erweiterte Optionenen"
+msgstr "Erweiterte Optionen"
 
 msgid ""
 "Extending the users module is only possible if a default value for a required "
